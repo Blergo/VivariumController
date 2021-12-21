@@ -1,60 +1,75 @@
 #include <Arduino.h>
-#include <Wire.h>
-#include <RtcDS1307.h>
-#include <SPI.h>
-#include <Adafruit_GrayOLED.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_ILI9341.h>
+#include <WiFi.h>
+#include <Adafruit_SPIDevice.h>
+#include <RTClib.h>
+#include <time.h>
 
-#define TFT_CS   15
-#define TFT_DC   33
+RTC_DS1307 rtc;
+int yr = 0;
+int mt = 0;
+int dy = 0;
+int hr = 0;
+int mi = 0;
+int se = 0;
 
-RtcDS1307<TwoWire> Rtc(Wire);
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 0;
+const int   daylightOffset_sec = 3600;
 
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+const char* ssid = "InfiniteWisdom";
+const char* password = "K1net1CK1net1C";
+struct tm timeinfo;
 
-TaskHandle_t TaskRTCUpdate_Handler;
+void TFTUpdate(void * parameter);
 
-void TaskRTCUpdate(void *pvParameters);
-void TaskTFTUpdate(void *pvParameters);
-
-unsigned long testFillScreen() {
-  unsigned long start = micros();
-  tft.fillScreen(ILI9341_BLACK);
-  yield();
-  tft.fillScreen(ILI9341_RED);
-  yield();
-  tft.fillScreen(ILI9341_GREEN);
-  yield();
-  tft.fillScreen(ILI9341_BLUE);
-  yield();
-  tft.fillScreen(ILI9341_BLACK);
-  yield();
-  return micros() - start;
+void initWiFi() {
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi ..");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print('.');
+    delay(1000);
+  }
+  Serial.println(WiFi.localIP());
 }
 
 void setup() {
   Serial.begin(9600);
-  Rtc.Begin();
-  tft.begin();
-  Serial.println(testFillScreen());
-  xTaskCreate(TaskRTCUpdate, "RTCUpdate", 128, NULL, 5, NULL); 
-  xTaskCreate(TaskTFTUpdate, "TFTUpdate", 128, NULL, 5, NULL); 
+  initWiFi();
+
+  if(!rtc.begin()) {
+      Serial.println("Couldn't find RTC!");
+      Serial.flush();
+      while (1) delay(10);
+  }
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  getLocalTime(&timeinfo);
+  yr = timeinfo.tm_year + 1900;
+  mt = timeinfo.tm_mon + 1;
+  dy = timeinfo.tm_mday;
+  hr = timeinfo.tm_hour;
+  mi = timeinfo.tm_min;
+  se = timeinfo.tm_sec;
+  rtc.adjust(DateTime(yr, mt, dy, hr, mi, se));
+
+  xTaskCreate(TFTUpdate, "TFT Update", 1000, NULL, 1, NULL);
 }
 
-void TaskRTCUpdate(void *pvParameters) {
-  (void) pvParameters;
-  for(;;) {
-    RtcDateTime now = Rtc.GetDateTime();
-    Serial.print(now);
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+void TFTUpdate(void * parameter){
+  for(;;){
+    DateTime now = rtc.now();
+    char buf2[] = "YYMMDD-hh:mm:ss";
+    Serial.println(now.toString(buf2));
+    delay(1000);
+
   }
 }
 
-void TaskTFTUpdate(void *pvParameters) {
-  
-}
-
 void loop() {
-  // put your main code here, to run repeatedly:
 }
