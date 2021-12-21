@@ -7,10 +7,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
 
-#define STMPE_CS 32
 #define TFT_CS   15
 #define TFT_DC   33
-#define SD_CS    14
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
