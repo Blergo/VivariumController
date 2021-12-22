@@ -6,6 +6,8 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
+#include <lv_conf.h>
+#include <lvgl.h>
 
 #define TFT_CS   15
 #define TFT_DC   33
