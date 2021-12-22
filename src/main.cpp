@@ -40,6 +40,8 @@ void initWiFi() {
 void setup() {
   Serial.begin(9600);
   tft.begin();
+  tft.setRotation(1);
+  tft.fillScreen(ILI9341_BLACK);
   initWiFi();
 
   if(!rtc.begin()) {
@@ -65,7 +67,6 @@ void setup() {
   delay(500);
   tft.fillScreen(ILI9341_GREEN);
 
-  tft.setRotation(0);
   tft.setCursor(0, 0);
   tft.setTextColor(ILI9341_BLUE);  
   tft.setTextSize(1);
