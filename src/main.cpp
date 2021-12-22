@@ -10,7 +10,7 @@
 #include <lvgl.h>
 
 #define TFT_CS   15
-#define TFT_DC   33
+#define TFT_DC   2
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
@@ -57,7 +57,7 @@ void setup() {
     return;
   }
   getLocalTime(&timeinfo);
-  rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+  //rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
 
   tft.fillScreen(0xffff);
   delay(500);
