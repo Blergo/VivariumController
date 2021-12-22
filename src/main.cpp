@@ -35,6 +35,9 @@ void initWiFi() {
 
 void setup() {
   Serial.begin(9600);
+  tft.init();
+  tft.setRotation(1);
+  tft.fillScreen(TFT_BLACK);
   initWiFi();
 
   if(!rtc.begin()) {
@@ -51,10 +54,6 @@ void setup() {
   }
   getLocalTime(&timeinfo);
   //rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
-
-  tft.init();
-  tft.setRotation(1);
-  tft.fillScreen(TFT_BLACK);
 
   xTaskCreate(TFTUpdate, "TFT Update", 1000, NULL, 1, NULL);
 }
