@@ -57,6 +57,20 @@ void setup() {
   getLocalTime(&timeinfo);
   rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
 
+  tft.fillScreen(0xffff);
+  delay(500);
+  tft.fillScreen(0x0000);
+  delay(500);
+  tft.fillScreen(ILI9341_RED);
+  delay(500);
+  tft.fillScreen(ILI9341_GREEN);
+
+  tft.setRotation(0);
+  tft.setCursor(0, 0);
+  tft.setTextColor(ILI9341_BLUE);  
+  tft.setTextSize(1);
+  tft.println("Hello World!");
+
   xTaskCreate(TFTUpdate, "TFT Update", 1000, NULL, 1, NULL);
 }
 
