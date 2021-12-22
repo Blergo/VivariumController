@@ -5,14 +5,11 @@
 #include <time.h>
 #include <SPI.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_ILI9341.h>
+#include <TFT_eSPI.h>
 #include <lv_conf.h>
 #include <lvgl.h>
 
-#define TFT_CS   15
-#define TFT_DC   2
-
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+TFT_eSPI tft = TFT_eSPI(); 
 
 RTC_DS1307 rtc;
 
@@ -39,9 +36,9 @@ void initWiFi() {
 
 void setup() {
   Serial.begin(9600);
-  tft.begin();
-  tft.setRotation(1);
-  tft.fillScreen(ILI9341_BLACK);
+  tft.init();
+  tft.setRotation(2);
+  tft.fillScreen(TFT_BLACK);
   initWiFi();
 
   if(!rtc.begin()) {
@@ -59,18 +56,7 @@ void setup() {
   getLocalTime(&timeinfo);
   //rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
 
-  tft.fillScreen(0xffff);
-  delay(500);
-  tft.fillScreen(0x0000);
-  delay(500);
-  tft.fillScreen(ILI9341_RED);
-  delay(500);
-  tft.fillScreen(ILI9341_GREEN);
 
-  tft.setCursor(0, 0);
-  tft.setTextColor(ILI9341_BLUE);  
-  tft.setTextSize(1);
-  tft.println("Hello World!");
 
   xTaskCreate(TFTUpdate, "TFT Update", 1000, NULL, 1, NULL);
 }
