@@ -4,7 +4,6 @@
 #include <RTClib.h>
 #include <time.h>
 #include <SPI.h>
-#include <Adafruit_GFX.h>
 #include <TFT_eSPI.h>
 #include <lv_conf.h>
 #include <lvgl.h>
