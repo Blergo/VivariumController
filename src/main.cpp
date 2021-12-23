@@ -9,6 +9,9 @@
 #include <lv_conf.h>
 #include <lvgl.h>
 
+#define TOUCH_CS  -1
+#define TOUCH_IRQ -1
+
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
 const int   daylightOffset_sec = 3600;
@@ -20,7 +23,7 @@ const int MY_DISP_HOR_RES = 320;
 const int MY_DISP_VER_RES = 240;
 
 TFT_eSPI tft = TFT_eSPI(); 
-
+XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
 RTC_DS1307 rtc;
 
 const int blPin = 32;
@@ -66,6 +69,8 @@ void setup() {
   Serial.begin(9600);
   tft.init();
   tft.setRotation(1);
+  ts.begin();
+  ts.setRotation(1);
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
