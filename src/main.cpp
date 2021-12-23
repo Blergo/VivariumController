@@ -114,6 +114,9 @@ void TFTUpdate(void * parameter) {
 }
 
 void CheckRTC(void * parameter) {
+  while (WiFi.status() != WL_CONNECTED) {
+    vTaskDelay(100);
+  }
   TickType_t xLastWakeTime;
   const portTickType xFrequency = 3600000 / portTICK_RATE_MS;
   xLastWakeTime = xTaskGetTickCount ();
