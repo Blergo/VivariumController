@@ -28,7 +28,12 @@ TaskHandle_t TaskHandle_3;
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
-static lv_disp_drv_t disp_drv; 
+static lv_disp_drv_t disp_drv;
+static lv_disp_t *disp;
+
+
+lv_obj_t *screenTest;
+lv_obj_t *labelTest;
 
 struct tm timeinfo;
 
@@ -40,11 +45,10 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
-    uint32_t wh = w*h;
 
     tft.startWrite();
     tft.setAddrWindow(area->x1, area->y1, w, h);
-    while (wh--) tft.pushColor(color_p++->full);
+    tft.pushColors(&color_p->full, w * h, true);
     tft.endWrite();
 
     lv_disp_flush_ready(disp);
@@ -62,7 +66,6 @@ void setup() {
   disp_drv.flush_cb = my_disp_flush;
   disp_drv.hor_res = MY_DISP_HOR_RES;
   disp_drv.ver_res = MY_DISP_VER_RES;
-  lv_disp_t * disp;
   disp = lv_disp_drv_register(&disp_drv);
 
   xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_3);
@@ -74,6 +77,15 @@ void setup() {
   }
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+  screenTest = lv_obj_create(NULL);
+
+  labelTest = lv_label_create(screenTest);
+  lv_label_set_long_mode(labelTest, LV_LABEL_LONG_WRAP);
+  lv_label_set_text(labelTest, "Test Label!");
+  lv_obj_set_align(labelTest, LV_ALIGN_CENTER);
+  lv_obj_set_size(labelTest, 240, 40);
+  lv_obj_set_pos(labelTest, 0, 15);
 
   xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_2);
   xTaskCreate(TFTUpdate, "TFT Update", 2000, NULL, 3, &TaskHandle_1);
