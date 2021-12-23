@@ -102,14 +102,27 @@ void setup() {
 
 void BuildUI(void * parameter) {
     lv_obj_t *tabview;
+
     tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 50);
 
     lv_obj_t *tab1 = lv_tabview_add_tab(tabview, "Settings");
 
-    lv_obj_t * label = lv_label_create(tab1);
-    lv_label_set_text(label, "Test");
+    lv_obj_t * WiFisw;
+    WiFisw = lv_switch_create(tab1);
+    lv_obj_add_event_cb(WiFisw, NULL, LV_EVENT_ALL, NULL);
 
-    lv_obj_scroll_to_view_recursive(label, LV_ANIM_ON);
+    lv_obj_t * WiFilabel = lv_label_create(tab1);
+    lv_label_set_text(WiFilabel, "WiFi");
+    lv_obj_align_to(WiFilabel, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
+
+    lv_obj_t * NTPsw;
+    NTPsw = lv_switch_create(tab1);
+    lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
+    lv_obj_add_event_cb(NTPsw, NULL, LV_EVENT_ALL, NULL);
+
+    lv_obj_t * NTPlabel = lv_label_create(tab1);
+    lv_label_set_text(NTPlabel, "NTP");
+    lv_obj_align_to(NTPlabel, NTPsw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
     
     vTaskDelete(NULL);
 }
