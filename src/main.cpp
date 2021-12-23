@@ -22,9 +22,17 @@ TFT_eSPI tft = TFT_eSPI();
 
 RTC_DS1307 rtc;
 
+const int blPin = -1;
+const int blFreq = 5000;
+const int blChannel = 0;
+const int blResolution = 8;
+int curDuty = 0;
+int setDuty = 255;
+
 TaskHandle_t TaskHandle_1;
 TaskHandle_t TaskHandle_2;
 TaskHandle_t TaskHandle_3;
+TaskHandle_t TaskHandle_4;
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
@@ -39,6 +47,7 @@ struct tm timeinfo;
 void TFTUpdate(void * parameter);
 void CheckRTC(void * parameter);
 void initWiFi(void * parameter);
+void blPWM(void * parameter);
 
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
@@ -67,7 +76,11 @@ void setup() {
   disp_drv.ver_res = MY_DISP_VER_RES;
   disp = lv_disp_drv_register(&disp_drv);
 
+  ledcSetup(blChannel, blFreq, blResolution);
+  ledcAttachPin(blPin, blChannel);
+
   xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_3);
+  xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_4);
 
   if(!rtc.begin()) {
       Serial.println("Couldn't find RTC!");
@@ -100,6 +113,14 @@ void initWiFi(void * parameter) {
   }
   Serial.println(WiFi.localIP());
   vTaskDelete(NULL);
+}
+
+void blPWM(void * parameter) {
+  if (setDuty != curDuty) {
+    ledcWrite(blChannel, setDuty);
+    curDuty = setDuty;
+  }
+  vTaskDelay(50);
 }
 
 void TFTUpdate(void * parameter) {
