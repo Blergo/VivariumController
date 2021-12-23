@@ -31,7 +31,6 @@ static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
 static lv_disp_drv_t disp_drv;
 static lv_disp_t *disp;
 
-
 lv_obj_t *screenTest;
 lv_obj_t *labelTest;
 
