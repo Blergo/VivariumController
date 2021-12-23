@@ -79,9 +79,6 @@ void setup() {
   ledcSetup(blChannel, blFreq, blResolution);
   ledcAttachPin(blPin, blChannel);
 
-  ledcSetup(blChannel, blFreq, blResolution);
-  ledcAttachPin(blPin, blChannel);
-
   xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_3);
   xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_4);
 
