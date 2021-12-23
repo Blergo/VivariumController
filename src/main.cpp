@@ -46,7 +46,6 @@ void setup() {
 
   xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_2);
   xTaskCreate(TFTUpdate, "TFT Update", 2000, NULL, 1, &TaskHandle_1);
-
 }
 
 void initWiFi(void * parameter) {
