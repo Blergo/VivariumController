@@ -25,7 +25,7 @@ const char* password = "K1net1CK1net1C";
 struct tm timeinfo;
 
 void TFTUpdate(void * parameter);
-void UpdateRTC(void * parameter);
+void CheckRTC(void * parameter);
 void initWiFi(void * parameter);
 
 void setup() {
@@ -44,7 +44,7 @@ void setup() {
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
-  xTaskCreate(UpdateRTC, "Update RTC", 2000, NULL, 4, &TaskHandle_2);
+  xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_2);
   xTaskCreate(TFTUpdate, "TFT Update", 2000, NULL, 1, &TaskHandle_1);
 
 }
@@ -70,12 +70,15 @@ void TFTUpdate(void * parameter) {
   }
 }
 
-void UpdateRTC(void * parameter) {
+void CheckRTC(void * parameter) {
   if(!getLocalTime(&timeinfo)){
     Serial.println("Failed to obtain time");
     return;
   }
-  rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+  if (! rtc.isrunning()) {
+    Serial.println("RTC is NOT running, let's set the time!");
+    rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+  }
   vTaskDelete(NULL);
 }
 
