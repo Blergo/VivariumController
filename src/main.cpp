@@ -8,6 +8,16 @@
 #include <lv_conf.h>
 #include <lvgl.h>
 
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 0;
+const int   daylightOffset_sec = 3600;
+
+const char* ssid = "InfiniteWisdom";
+const char* password = "K1net1CK1net1C";
+
+const int MY_DISP_HOR_RES = 320;
+const int MY_DISP_VER_RES = 240;
+
 TFT_eSPI tft = TFT_eSPI(); 
 
 RTC_DS1307 rtc;
@@ -16,23 +26,47 @@ TaskHandle_t TaskHandle_1;
 TaskHandle_t TaskHandle_2;
 TaskHandle_t TaskHandle_3;
 
-const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 0;
-const int   daylightOffset_sec = 3600;
+static lv_disp_draw_buf_t disp_buf;
+static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
+static lv_disp_drv_t disp_drv;
+static lv_disp_t *disp;
 
-const char* ssid = "InfiniteWisdom";
-const char* password = "K1net1CK1net1C";
+
+lv_obj_t *screenTest;
+lv_obj_t *labelTest;
+
 struct tm timeinfo;
 
 void TFTUpdate(void * parameter);
 void CheckRTC(void * parameter);
 void initWiFi(void * parameter);
 
+void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+{
+    uint32_t w = (area->x2 - area->x1 + 1);
+    uint32_t h = (area->y2 - area->y1 + 1);
+
+    tft.startWrite();
+    tft.setAddrWindow(area->x1, area->y1, w, h);
+    tft.pushColors(&color_p->full, w * h, true);
+    tft.endWrite();
+
+    lv_disp_flush_ready(disp);
+}
+
 void setup() {
   Serial.begin(9600);
   tft.init();
   tft.setRotation(1);
-  tft.fillScreen(TFT_BLACK);
+
+  lv_init();
+  lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
+  lv_disp_drv_init(&disp_drv);
+  disp_drv.draw_buf = &disp_buf;
+  disp_drv.flush_cb = my_disp_flush;
+  disp_drv.hor_res = MY_DISP_HOR_RES;
+  disp_drv.ver_res = MY_DISP_VER_RES;
+  disp = lv_disp_drv_register(&disp_drv);
 
   xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_3);
 
@@ -44,8 +78,17 @@ void setup() {
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
+  screenTest = lv_obj_create(NULL);
+
+  labelTest = lv_label_create(screenTest);
+  lv_label_set_long_mode(labelTest, LV_LABEL_LONG_WRAP);
+  lv_label_set_text(labelTest, "Test Label!");
+  lv_obj_set_align(labelTest, LV_ALIGN_CENTER);
+  lv_obj_set_size(labelTest, 240, 40);
+  lv_obj_set_pos(labelTest, 0, 15);
+
   xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_2);
-  xTaskCreate(TFTUpdate, "TFT Update", 2000, NULL, 1, &TaskHandle_1);
+  xTaskCreate(TFTUpdate, "TFT Update", 2000, NULL, 3, &TaskHandle_1);
 }
 
 void initWiFi(void * parameter) {
@@ -61,11 +104,12 @@ void initWiFi(void * parameter) {
 }
 
 void TFTUpdate(void * parameter) {
-  for(;;){
-    DateTime now = rtc.now();
-    char buf1[] = "DD/MM/YY-hh:mm:ss";
-    Serial.println(now.toString(buf1));
-    delay(1000);
+  TickType_t xLastWakeTime1;
+  const portTickType xFrequency1 = 5 / portTICK_RATE_MS;
+  xLastWakeTime1 = xTaskGetTickCount ();
+  for(;;) {
+    vTaskDelayUntil( &xLastWakeTime1, xFrequency1 );
+    lv_timer_handler();
   }
 }
 
