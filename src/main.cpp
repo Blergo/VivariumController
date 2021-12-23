@@ -22,7 +22,7 @@ TFT_eSPI tft = TFT_eSPI();
 
 RTC_DS1307 rtc;
 
-const int blPin = -1;
+const int blPin = 32;
 const int blFreq = 5000;
 const int blChannel = 0;
 const int blResolution = 8;
@@ -116,11 +116,13 @@ void initWiFi(void * parameter) {
 }
 
 void blPWM(void * parameter) {
-  if (setDuty != curDuty) {
-    ledcWrite(blChannel, setDuty);
-    curDuty = setDuty;
+  for(;;){
+    if (setDuty != curDuty) {
+      ledcWrite(blChannel, setDuty);
+      curDuty = setDuty;
+    }
+    vTaskDelay(50);
   }
-  vTaskDelay(50);
 }
 
 void TFTUpdate(void * parameter) {
