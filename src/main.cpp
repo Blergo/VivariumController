@@ -33,17 +33,16 @@ TaskHandle_t TaskHandle_1;
 TaskHandle_t TaskHandle_2;
 TaskHandle_t TaskHandle_3;
 TaskHandle_t TaskHandle_4;
+TaskHandle_t TaskHandle_5;
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
 static lv_disp_drv_t disp_drv;
 static lv_disp_t *disp;
 
-lv_obj_t *screenTest;
-lv_obj_t *labelTest;
-
 struct tm timeinfo;
 
+void BuildUI(void * parameter);
 void TFTUpdate(void * parameter);
 void CheckRTC(void * parameter);
 void initWiFi(void * parameter);
@@ -58,7 +57,7 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
     tft.setAddrWindow(area->x1, area->y1, w, h);
     tft.pushColors(&color_p->full, w * h, true);
     tft.endWrite();
-
+    Serial.println("my_disp_flush");
     lv_disp_flush_ready(disp);
 }
 
@@ -79,8 +78,9 @@ void setup() {
   ledcSetup(blChannel, blFreq, blResolution);
   ledcAttachPin(blPin, blChannel);
 
-  xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_3);
-  xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_4);
+  xTaskCreate(BuildUI, "Build UI", 2000, NULL, 5, &TaskHandle_1);
+  xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
+  xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_3);
 
   if(!rtc.begin()) {
       Serial.println("Couldn't find RTC!");
@@ -90,17 +90,22 @@ void setup() {
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
-  screenTest = lv_obj_create(NULL);
+  xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);
+  xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 3, &TaskHandle_5);
+}
 
-  labelTest = lv_label_create(screenTest);
-  lv_label_set_long_mode(labelTest, LV_LABEL_LONG_WRAP);
-  lv_label_set_text(labelTest, "Test Label!");
-  lv_obj_set_align(labelTest, LV_ALIGN_CENTER);
-  lv_obj_set_size(labelTest, 240, 40);
-  lv_obj_set_pos(labelTest, 0, 15);
+void BuildUI(void * parameter) {
+    lv_obj_t *tabview;
+    tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 50);
 
-  xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_2);
-  xTaskCreate(TFTUpdate, "TFT Update", 2000, NULL, 3, &TaskHandle_1);
+    lv_obj_t *tab1 = lv_tabview_add_tab(tabview, "Settings");
+
+    lv_obj_t * label = lv_label_create(tab1);
+    lv_label_set_text(label, "Test");
+
+    lv_obj_scroll_to_view_recursive(label, LV_ANIM_ON);
+    
+    vTaskDelete(NULL);
 }
 
 void initWiFi(void * parameter) {
@@ -127,7 +132,7 @@ void blPWM(void * parameter) {
 
 void TFTUpdate(void * parameter) {
   TickType_t xLastWakeTime1;
-  const portTickType xFrequency1 = 5 / portTICK_RATE_MS;
+  const portTickType xFrequency1 = 10 / portTICK_RATE_MS;
   xLastWakeTime1 = xTaskGetTickCount ();
   for(;;) {
     vTaskDelayUntil( &xLastWakeTime1, xFrequency1 );
