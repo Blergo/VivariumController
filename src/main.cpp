@@ -46,7 +46,6 @@ void setup() {
 
   xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_2);
   xTaskCreate(TFTUpdate, "TFT Update", 2000, NULL, 1, &TaskHandle_1);
-
 }
 
 void initWiFi(void * parameter) {
@@ -71,15 +70,22 @@ void TFTUpdate(void * parameter) {
 }
 
 void CheckRTC(void * parameter) {
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-    return;
+  while (WiFi.status() != WL_CONNECTED) {
+    vTaskDelay(100);
   }
-  if (! rtc.isrunning()) {
-    Serial.println("RTC is NOT running, let's set the time!");
-    rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+  TickType_t xLastWakeTime;
+  const portTickType xFrequency = 3600000 / portTICK_RATE_MS;
+  xLastWakeTime = xTaskGetTickCount ();
+  for(;;){
+    vTaskDelayUntil( &xLastWakeTime, xFrequency );
+    if (! rtc.isrunning()) {
+      Serial.println("RTC is NOT running, let's set the time!");
+      if(!getLocalTime(&timeinfo)){
+        Serial.println("Failed to obtain time");
+      }
+      rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+    }
   }
-  vTaskDelete(NULL);
 }
 
 void loop() {
