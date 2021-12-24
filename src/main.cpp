@@ -35,6 +35,8 @@ const int blChannel = 0;
 const int blResolution = 8;
 int curDuty = 0;
 int setDuty = 255;
+int blDuration = 20000;
+int blTimeout = 0;
 
 TaskHandle_t TaskHandle_1;
 TaskHandle_t TaskHandle_2;
@@ -135,6 +137,10 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 
 void touchpad_read(lv_indev_drv_t * drv, lv_indev_data_t*data){
   if (ts.touched()) {
+    if (blTimeout == 0){
+      setDuty=255;
+    }
+    blTimeout = millis()+blDuration;
     ScreenPoint sp = ScreenPoint();
     TS_Point p = ts.getPoint();
     sp = getScreenCoords(p.x, p.y);
@@ -172,6 +178,8 @@ void setup() {
   indev_drv.type = LV_INDEV_TYPE_POINTER;
   indev_drv.read_cb = touchpad_read;
   lv_indev_drv_register(&indev_drv);
+
+  blTimeout = millis()+blDuration;
 
   xTaskCreate(BuildUI, "Build UI", 2000, NULL, 5, &TaskHandle_1);
   xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
@@ -249,6 +257,10 @@ void initWiFi(void * parameter) {
 
 void blPWM(void * parameter) {
   for(;;){
+    if (millis() > blTimeout && blTimeout != 0){
+      blTimeout = 0;
+      setDuty = 50;
+    }
     if (setDuty != curDuty) {
       ledcWrite(blChannel, setDuty);
       curDuty = setDuty;
