@@ -39,7 +39,8 @@ int setDuty = 255;
 int blDuration = 20000;
 int blTimeout = 0;
 
-int NTPisRun = 0;
+bool WiFiState;
+bool NTPState;
 
 TaskHandle_t TaskHandle_1;
 TaskHandle_t TaskHandle_2;
@@ -56,6 +57,8 @@ lv_obj_t *NTPsw;
 lv_obj_t *NTPlabel;
 lv_obj_t *CalBtn;
 lv_obj_t *CalLabel;
+lv_obj_t *SaveBtn;
+lv_obj_t *SaveLabel;
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
@@ -95,12 +98,21 @@ if(yCoord >= tft.height()) yCoord = tft.height() - 1;
 return(ScreenPoint(xCoord, yCoord));
 }
 
+void SaveSettings(){
+  EEPROM.put(0, xCalM);
+  EEPROM.put(6, yCalM);
+  EEPROM.put(11,xCalC);
+  EEPROM.put(18,yCalC);
+  EEPROM.put(24, WiFiState);
+  EEPROM.put(25, NTPState);
+  EEPROM.commit();
+}
+
 void calibrateTouchScreen(){
   TS_Point p;
   int16_t x1,y1,x2,y2;
  
   tft.fillScreen(ILI9341_BLACK);
-  // wait for no touch
   while(ts.touched());
   tft.drawFastHLine(10,20,20,ILI9341_RED);
   tft.drawFastVLine(20,10,20,ILI9341_RED);
@@ -131,11 +143,6 @@ void calibrateTouchScreen(){
   yCalM = (float)yDist / (float)(y2 - y1);
   yCalC = 20.0 - ((float)y1 * yCalM);
 
-  EEPROM.put(0, xCalM);
-  EEPROM.put(6, yCalM);
-  EEPROM.put(11,xCalC);
-  EEPROM.put(18,yCalC);
-  EEPROM.commit();
   lv_obj_invalidate(tabview);
 }
 
@@ -177,13 +184,15 @@ void setup() {
 
   ledcSetup(blChannel, blFreq, blResolution);
   ledcAttachPin(blPin, blChannel);
-  xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_3);
+  xTaskCreate(blPWM, "Backlight PWM", 1500, NULL, 1, &TaskHandle_3);
 
-  EEPROM.begin(23);
+  EEPROM.begin(26);
   EEPROM.get(0, xCalM);
   EEPROM.get(6, yCalM);
-  EEPROM.get(11,xCalC);
-  EEPROM.get(18,yCalC);
+  EEPROM.get(11, xCalC);
+  EEPROM.get(18, yCalC);
+  EEPROM.get(24, WiFiState);
+  EEPROM.get(25, NTPState);
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
@@ -203,6 +212,17 @@ void setup() {
 
   xTaskCreate(BuildUI, "Build UI", 2000, NULL, 5, &TaskHandle_1);
   xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
+  
+  if(WiFiState == true){
+    lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
+  }
+  else if(WiFiState == false){
+    lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
+  }
+  if(NTPState == true){
+    lv_obj_add_state(NTPsw, LV_STATE_CHECKED);
+    xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);
+  }
 
   if(!rtc.begin()) {
       Serial.println("Couldn't find RTC!");
@@ -217,8 +237,12 @@ void setup() {
 
 static void event_handler_btn(lv_event_t * e){
   lv_event_code_t code = lv_event_get_code(e);
-    if(code == LV_EVENT_CLICKED){
+  lv_obj_t * obj = lv_event_get_target(e);
+    if(code == LV_EVENT_CLICKED && obj == CalBtn){
       calibrateTouchScreen();
+    }
+    else if(code == LV_EVENT_CLICKED && obj == SaveBtn){
+      SaveSettings();
     }
 }
 
@@ -229,28 +253,30 @@ static void event_handler_sw(lv_event_t * e){
     if(code == LV_EVENT_VALUE_CHANGED) {
       if(obj == WiFisw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
         lv_obj_clear_state(NTPsw, LV_STATE_DISABLED);
+        WiFiState = true;
       }
       else if(obj == WiFisw){
         lv_obj_clear_state(NTPsw, LV_STATE_CHECKED);
         lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
-        if(NTPisRun == 1){
+        WiFiState = false;
+        if(NTPState == true){
           vTaskDelete(TaskHandle_4);
-          NTPisRun = 0;
+          NTPState = false;
         }
       }
       else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
-        xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);       
+        xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);      
       }
       else if (obj == NTPsw){
         vTaskDelete(TaskHandle_4);
-        NTPisRun = 0;
+        NTPState = false;
       }
     }
 }
 
 void BuildUI(void * parameter) {
 
-    tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 50);
+    tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 30);
 
     tab1 = lv_tabview_add_tab(tabview, "Test");
     tab2 = lv_tabview_add_tab(tabview, "Settings");
@@ -265,7 +291,6 @@ void BuildUI(void * parameter) {
     NTPsw = lv_switch_create(tab2);
     lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
     lv_obj_add_event_cb(NTPsw, event_handler_sw, LV_EVENT_ALL, NULL);
-    lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
 
     NTPlabel = lv_label_create(tab2);
     lv_label_set_text(NTPlabel, "NTP");
@@ -278,6 +303,14 @@ void BuildUI(void * parameter) {
     lv_obj_align_to(CalBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 20);
     lv_label_set_text(CalLabel, "Calibrate Touch");
     lv_obj_center(CalLabel);
+
+    SaveBtn = lv_btn_create(tab2);
+    lv_obj_add_event_cb(SaveBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+
+    SaveLabel = lv_label_create(SaveBtn);
+    lv_obj_align_to(SaveBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 150, 20);
+    lv_label_set_text(SaveLabel, "Save Settings");
+    lv_obj_center(SaveLabel);
 
     vTaskDelete(NULL);
 }
@@ -319,7 +352,8 @@ void TFTUpdate(void * parameter) {
 }
 
 void CheckRTC(void * parameter) {
-  NTPisRun = 1;
+  NTPState = true;
+  Serial.println("NTP Running");
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(100);
   }
