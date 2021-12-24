@@ -206,6 +206,7 @@ static void switchevent(lv_event_t * e)
       else if(obj == WiFisw){
         lv_obj_clear_state(NTPsw, LV_STATE_CHECKED);
         lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
+        vTaskDelete(TaskHandle_4);
       }
       else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
         xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);       
