@@ -165,7 +165,7 @@ void setup() {
   ledcSetup(blChannel, blFreq, blResolution);
   ledcAttachPin(blPin, blChannel);
   xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_3);
-  
+
   calibrateTouchScreen();
 
   lv_init();
@@ -221,20 +221,22 @@ void BuildUI(void * parameter) {
 
     tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 50);
 
-    lv_obj_t *tab1 = lv_tabview_add_tab(tabview, "Settings");
+    lv_obj_t *tab1 = lv_tabview_add_tab(tabview, "Test");
+
+    lv_obj_t *tab2 = lv_tabview_add_tab(tabview, "Settings");
     
-    WiFisw = lv_switch_create(tab1);
+    WiFisw = lv_switch_create(tab2);
     lv_obj_add_event_cb(WiFisw, switchevent, LV_EVENT_ALL, NULL);
 
-    lv_obj_t * WiFilabel = lv_label_create(tab1);
+    lv_obj_t * WiFilabel = lv_label_create(tab2);
     lv_label_set_text(WiFilabel, "WiFi");
     lv_obj_align_to(WiFilabel, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
 
-    NTPsw = lv_switch_create(tab1);
+    NTPsw = lv_switch_create(tab2);
     lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
     lv_obj_add_event_cb(NTPsw, switchevent, LV_EVENT_ALL, NULL);
 
-    lv_obj_t * NTPlabel = lv_label_create(tab1);
+    lv_obj_t * NTPlabel = lv_label_create(tab2);
     lv_label_set_text(NTPlabel, "NTP");
     lv_obj_align_to(NTPlabel, NTPsw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
 
