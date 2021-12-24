@@ -47,6 +47,8 @@ TaskHandle_t TaskHandle_2;
 TaskHandle_t TaskHandle_3;
 TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
+TaskHandle_t TaskHandle_6;
+
 
 lv_obj_t *tabview;
 lv_obj_t *tab1;
@@ -72,6 +74,7 @@ void BuildUI(void * parameter);
 void TFTUpdate(void * parameter);
 void CheckRTC(void * parameter);
 void initWiFi(void * parameter);
+void disWiFi(void * parameter);
 void blPWM(void * parameter);
 
 class ScreenPoint {
@@ -208,13 +211,19 @@ void setup() {
   indev_drv.read_cb = touchpad_read;
   lv_indev_drv_register(&indev_drv);
 
+  xTaskCreate(BuildUI, "Build UI", 2000, NULL, 6, &TaskHandle_1);
   blTimeout = millis()+blDuration;
+  //delay(100);
 
-  xTaskCreate(BuildUI, "Build UI", 2000, NULL, 5, &TaskHandle_1);
-  xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
-  
+  if(!rtc.begin()) {
+      Serial.println("Couldn't find RTC!");
+      Serial.flush();
+      while (1) delay(10);
+  }
+
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
+    xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
   }
   else if(WiFiState == false){
     lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
@@ -222,12 +231,6 @@ void setup() {
   if(NTPState == true){
     lv_obj_add_state(NTPsw, LV_STATE_CHECKED);
     xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);
-  }
-
-  if(!rtc.begin()) {
-      Serial.println("Couldn't find RTC!");
-      Serial.flush();
-      while (1) delay(10);
   }
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
@@ -253,11 +256,13 @@ static void event_handler_sw(lv_event_t * e){
     if(code == LV_EVENT_VALUE_CHANGED) {
       if(obj == WiFisw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
         lv_obj_clear_state(NTPsw, LV_STATE_DISABLED);
+        xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
         WiFiState = true;
       }
       else if(obj == WiFisw){
         lv_obj_clear_state(NTPsw, LV_STATE_CHECKED);
         lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
+        xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 5, &TaskHandle_6);
         WiFiState = false;
         if(NTPState == true){
           vTaskDelete(TaskHandle_4);
@@ -323,7 +328,19 @@ void initWiFi(void * parameter) {
     Serial.print('.');
     delay(1000);
   }
-  Serial.println(WiFi.localIP());
+  Serial.println("WiFi Connected!");
+  vTaskDelete(NULL);
+}
+
+void disWiFi(void * parameter) {
+  WiFi.disconnect();
+  Serial.print("Disconnecting WiFi ..");
+  while (WiFi.status() == WL_CONNECTED) {
+    Serial.print('.');
+    delay(1000);
+  }
+  WiFi.mode(WIFI_OFF);
+  Serial.println("WiFi Disconnected!");
   vTaskDelete(NULL);
 }
 
