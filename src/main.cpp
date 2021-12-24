@@ -38,6 +38,8 @@ int setDuty = 255;
 int blDuration = 20000;
 int blTimeout = 0;
 
+int NTPisRun = 0;
+
 TaskHandle_t TaskHandle_1;
 TaskHandle_t TaskHandle_2;
 TaskHandle_t TaskHandle_3;
@@ -206,13 +208,17 @@ static void switchevent(lv_event_t * e)
       else if(obj == WiFisw){
         lv_obj_clear_state(NTPsw, LV_STATE_CHECKED);
         lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
-        vTaskDelete(TaskHandle_4);
+        if(NTPisRun == 1){
+          vTaskDelete(TaskHandle_4);
+          NTPisRun = 0;
+        }
       }
       else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
         xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);       
       }
       else if (obj == NTPsw){
         vTaskDelete(TaskHandle_4);
+        NTPisRun = 0;
       }
     }
 }
@@ -280,16 +286,15 @@ void TFTUpdate(void * parameter) {
 }
 
 void CheckRTC(void * parameter) {
+  NTPisRun = 1;
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(100);
   }
   TickType_t xLastWakeTime;
-  //3600000
-  const portTickType xFrequency = 360 / portTICK_RATE_MS;
+  const portTickType xFrequency = 3600000 / portTICK_RATE_MS;
   xLastWakeTime = xTaskGetTickCount ();
   for(;;){
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
-    Serial.println("NTP Task Running");
     if (! rtc.isrunning()) {
       Serial.println("RTC is NOT running, let's set the time!");
       if(!getLocalTime(&timeinfo)){
