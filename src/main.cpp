@@ -119,15 +119,6 @@ void calibrateTouchScreen(){
 
   yCalM = (float)yDist / (float)(y2 - y1);
   yCalC = 20.0 - ((float)y1 * yCalM);
- 
-  Serial.print("x1 = ");Serial.print(x1);
-  Serial.print(", y1 = ");Serial.print(y1);
-  Serial.print("x2 = ");Serial.print(x2);
-  Serial.print(", y2 = ");Serial.println(y2);
-  Serial.print("xCalM = ");Serial.print(xCalM);
-  Serial.print(", xCalC = ");Serial.print(xCalC);
-  Serial.print("yCalM = ");Serial.print(yCalM);
-  Serial.print(", yCalC = ");Serial.println(yCalC);
 }
 
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -203,10 +194,11 @@ static void switchevent(lv_event_t * e)
     lv_obj_t * obj = lv_event_get_target(e);
     if(code == LV_EVENT_VALUE_CHANGED) {
       if(obj == WiFisw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
-      
+        lv_obj_clear_state(NTPsw, LV_STATE_DISABLED);
       }
       else if(obj == WiFisw){
-
+        lv_obj_clear_state(NTPsw, LV_STATE_CHECKED);
+        lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
       }
       else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
       
