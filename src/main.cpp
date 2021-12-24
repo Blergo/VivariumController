@@ -192,7 +192,6 @@ void setup() {
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
-  xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);
   xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 3, &TaskHandle_5);
 }
 
@@ -209,10 +208,10 @@ static void switchevent(lv_event_t * e)
         lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
       }
       else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
-      
+        xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);       
       }
       else if (obj == NTPsw){
-
+        vTaskDelete(TaskHandle_4);
       }
     }
 }
@@ -284,15 +283,18 @@ void CheckRTC(void * parameter) {
     vTaskDelay(100);
   }
   TickType_t xLastWakeTime;
-  const portTickType xFrequency = 3600000 / portTICK_RATE_MS;
+  //3600000
+  const portTickType xFrequency = 360 / portTICK_RATE_MS;
   xLastWakeTime = xTaskGetTickCount ();
   for(;;){
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
+    Serial.println("NTP Task Running");
     if (! rtc.isrunning()) {
       Serial.println("RTC is NOT running, let's set the time!");
       if(!getLocalTime(&timeinfo)){
         Serial.println("Failed to obtain time");
       }
+      Serial.println("Updating RTC..");
       rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
     }
   }
