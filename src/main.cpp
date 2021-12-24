@@ -161,6 +161,11 @@ void setup() {
   tft.setRotation(1);
   ts.begin();
   ts.setRotation(1);
+
+  ledcSetup(blChannel, blFreq, blResolution);
+  ledcAttachPin(blPin, blChannel);
+  xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_3);
+  
   calibrateTouchScreen();
 
   lv_init();
@@ -177,12 +182,8 @@ void setup() {
   indev_drv.read_cb = touchpad_read;
   lv_indev_drv_register(&indev_drv);
 
-  ledcSetup(blChannel, blFreq, blResolution);
-  ledcAttachPin(blPin, blChannel);
-
   xTaskCreate(BuildUI, "Build UI", 2000, NULL, 5, &TaskHandle_1);
   xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
-  xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_3);
 
   if(!rtc.begin()) {
       Serial.println("Couldn't find RTC!");
