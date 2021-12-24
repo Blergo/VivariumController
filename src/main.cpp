@@ -9,8 +9,8 @@
 #include <lv_conf.h>
 #include <lvgl.h>
 
-#define TOUCH_CS  -1
-#define TOUCH_IRQ -1
+#define TOUCH_CS  34
+#define TOUCH_IRQ 35
 
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
@@ -47,6 +47,7 @@ static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
 static lv_disp_drv_t disp_drv;
 static lv_disp_t *disp;
+static lv_indev_drv_t indev_drv;
 
 struct tm timeinfo;
 
@@ -65,8 +66,28 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
     tft.setAddrWindow(area->x1, area->y1, w, h);
     tft.pushColors(&color_p->full, w * h, true);
     tft.endWrite();
-    Serial.println("my_disp_flush");
     lv_disp_flush_ready(disp);
+}
+
+void touchpad_read(lv_indev_drv_t * drv, lv_indev_data_t*data){
+  if (ts.touched()) {
+    TS_Point p = ts.getPoint();
+    float xs = p.x;
+    float ys = p.y;
+    int x = alphaX * xs + betaX * ys + deltaX;
+    int y = alphaY * xs + betaY * ys + deltaY;
+    data->point.x = p.x;
+    data->point.y = p.y;
+    data->state = LV_INDEV_STATE_PRESSED;
+    Serial.print("x = ");
+    Serial.print(p.x);
+    Serial.print(", y = ");
+    Serial.print(p.y);
+    delay(30);
+    Serial.println();
+  } else {
+    data->state = LV_INDEV_STATE_RELEASED; 
+  }
 }
 
 void setup() {
@@ -84,6 +105,11 @@ void setup() {
   disp_drv.hor_res = MY_DISP_HOR_RES;
   disp_drv.ver_res = MY_DISP_VER_RES;
   disp = lv_disp_drv_register(&disp_drv);
+
+  lv_indev_drv_init(&indev_drv);
+  indev_drv.type = LV_INDEV_TYPE_POINTER;
+  indev_drv.read_cb = touchpad_read;
+  lv_indev_drv_register(&indev_drv);
 
   ledcSetup(blChannel, blFreq, blResolution);
   ledcAttachPin(blPin, blChannel);
