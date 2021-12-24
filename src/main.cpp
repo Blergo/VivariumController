@@ -26,6 +26,9 @@ TFT_eSPI tft = TFT_eSPI();
 XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
 RTC_DS1307 rtc;
 
+float xCalM = 0.0, yCalM = 0.0;
+float xCalC = 0.0, yCalC = 0.0;
+
 const int blPin = 32;
 const int blFreq = 5000;
 const int blChannel = 0;
@@ -57,6 +60,76 @@ void CheckRTC(void * parameter);
 void initWiFi(void * parameter);
 void blPWM(void * parameter);
 
+class ScreenPoint {
+
+  public:
+  int16_t x;
+  int16_t y;
+ 
+  ScreenPoint(){}
+ 
+  ScreenPoint(int16_t xIn, int16_t yIn){
+    x = xIn;
+    y = yIn;
+    }
+};
+
+ScreenPoint getScreenCoords(int16_t x, int16_t y){
+int16_t xCoord = round((x * xCalM) + xCalC);
+int16_t yCoord = round((y * yCalM) + yCalC);
+if(xCoord < 0) xCoord = 0;
+if(xCoord >= tft.width()) xCoord = tft.width() - 1;
+if(yCoord < 0) yCoord = 0;
+if(yCoord >= tft.height()) yCoord = tft.height() - 1;
+return(ScreenPoint(xCoord, yCoord));
+}
+
+void calibrateTouchScreen(){
+  TS_Point p;
+  int16_t x1,y1,x2,y2;
+ 
+  tft.fillScreen(ILI9341_BLACK);
+  // wait for no touch
+  while(ts.touched());
+  tft.drawFastHLine(10,20,20,ILI9341_RED);
+  tft.drawFastVLine(20,10,20,ILI9341_RED);
+  while(!ts.touched());
+  delay(50);
+  p = ts.getPoint();
+  x1 = p.x;
+  y1 = p.y;
+  tft.drawFastHLine(10,20,20,ILI9341_BLACK);
+  tft.drawFastVLine(20,10,20,ILI9341_BLACK);
+  delay(500);
+  while(ts.touched());
+  tft.drawFastHLine(tft.width() - 30,tft.height() - 20,20,ILI9341_RED);
+  tft.drawFastVLine(tft.width() - 20,tft.height() - 30,20,ILI9341_RED);
+  while(!ts.touched());
+  delay(50);
+  p = ts.getPoint();
+  x2 = p.x;
+  y2 = p.y;
+  tft.drawFastHLine(tft.width() - 30,tft.height() - 20,20,ILI9341_BLACK);
+  tft.drawFastVLine(tft.width() - 20,tft.height() - 30,20,ILI9341_BLACK);
+  int16_t xDist = tft.width() - 40;
+  int16_t yDist = tft.height() - 40;
+
+  xCalM = (float)xDist / (float)(x2 - x1);
+  xCalC = 20.0 - ((float)x1 * xCalM);
+
+  yCalM = (float)yDist / (float)(y2 - y1);
+  yCalC = 20.0 - ((float)y1 * yCalM);
+ 
+  Serial.print("x1 = ");Serial.print(x1);
+  Serial.print(", y1 = ");Serial.print(y1);
+  Serial.print("x2 = ");Serial.print(x2);
+  Serial.print(", y2 = ");Serial.println(y2);
+  Serial.print("xCalM = ");Serial.print(xCalM);
+  Serial.print(", xCalC = ");Serial.print(xCalC);
+  Serial.print("yCalM = ");Serial.print(yCalM);
+  Serial.print(", yCalC = ");Serial.println(yCalC);
+}
+
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
     uint32_t w = (area->x2 - area->x1 + 1);
@@ -71,20 +144,12 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 
 void touchpad_read(lv_indev_drv_t * drv, lv_indev_data_t*data){
   if (ts.touched()) {
+    ScreenPoint sp = ScreenPoint();
     TS_Point p = ts.getPoint();
-    float xs = p.x;
-    float ys = p.y;
-    int x = alphaX * xs + betaX * ys + deltaX;
-    int y = alphaY * xs + betaY * ys + deltaY;
-    data->point.x = p.x;
-    data->point.y = p.y;
+    sp = getScreenCoords(p.x, p.y);
+    data->point.x = sp.x;
+    data->point.y = sp.y;
     data->state = LV_INDEV_STATE_PRESSED;
-    Serial.print("x = ");
-    Serial.print(p.x);
-    Serial.print(", y = ");
-    Serial.print(p.y);
-    delay(30);
-    Serial.println();
   } else {
     data->state = LV_INDEV_STATE_RELEASED; 
   }
@@ -96,6 +161,7 @@ void setup() {
   tft.setRotation(1);
   ts.begin();
   ts.setRotation(1);
+  calibrateTouchScreen();
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
