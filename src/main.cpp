@@ -112,9 +112,17 @@ static void switchevent(lv_event_t * e)
       if(obj == WiFisw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
       
       }
+      else if(obj == WiFisw){
+
+      }
+      else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
+      
+      }
+      else if (obj == NTPsw){
+
+      }
     }
 }
-
 
 void BuildUI(void * parameter) {
 
