@@ -39,6 +39,10 @@ TaskHandle_t TaskHandle_3;
 TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
 
+lv_obj_t *tabview;
+lv_obj_t * WiFisw;
+lv_obj_t * NTPsw;
+
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
 static lv_disp_drv_t disp_drv;
@@ -100,25 +104,35 @@ void setup() {
   xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 3, &TaskHandle_5);
 }
 
+static void switchevent(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    if(code == LV_EVENT_VALUE_CHANGED) {
+      if(obj == WiFisw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
+      
+      }
+    }
+}
+
+
 void BuildUI(void * parameter) {
-    lv_obj_t *tabview;
+
 
     tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 50);
 
     lv_obj_t *tab1 = lv_tabview_add_tab(tabview, "Settings");
-
-    lv_obj_t * WiFisw;
+    
     WiFisw = lv_switch_create(tab1);
-    lv_obj_add_event_cb(WiFisw, NULL, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(WiFisw, switchevent, LV_EVENT_ALL, NULL);
 
     lv_obj_t * WiFilabel = lv_label_create(tab1);
     lv_label_set_text(WiFilabel, "WiFi");
     lv_obj_align_to(WiFilabel, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
 
-    lv_obj_t * NTPsw;
     NTPsw = lv_switch_create(tab1);
     lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
-    lv_obj_add_event_cb(NTPsw, NULL, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(NTPsw, switchevent, LV_EVENT_ALL, NULL);
 
     lv_obj_t * NTPlabel = lv_label_create(tab1);
     lv_label_set_text(NTPlabel, "NTP");
