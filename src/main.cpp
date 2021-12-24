@@ -8,6 +8,7 @@
 #include <XPT2046_Touchscreen.h>
 #include <lv_conf.h>
 #include <lvgl.h>
+#include <EEPROM.h>
 
 #define TOUCH_CS  34
 #define TOUCH_IRQ 35
@@ -47,8 +48,14 @@ TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
 
 lv_obj_t *tabview;
-lv_obj_t * WiFisw;
-lv_obj_t * NTPsw;
+lv_obj_t *tab1;
+lv_obj_t *tab2;
+lv_obj_t *WiFisw;
+lv_obj_t *WiFilabel;
+lv_obj_t *NTPsw;
+lv_obj_t *NTPlabel;
+lv_obj_t *CalBtn;
+lv_obj_t *CalLabel;
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
@@ -123,6 +130,13 @@ void calibrateTouchScreen(){
 
   yCalM = (float)yDist / (float)(y2 - y1);
   yCalC = 20.0 - ((float)y1 * yCalM);
+
+  EEPROM.put(0, xCalM);
+  EEPROM.put(6, yCalM);
+  EEPROM.put(11,xCalC);
+  EEPROM.put(18,yCalC);
+  EEPROM.commit();
+  lv_obj_invalidate(tabview);
 }
 
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -165,7 +179,11 @@ void setup() {
   ledcAttachPin(blPin, blChannel);
   xTaskCreate(blPWM, "Backlight PWM", 2000, NULL, 1, &TaskHandle_3);
 
-  calibrateTouchScreen();
+  EEPROM.begin(23);
+  EEPROM.get(0, xCalM);
+  EEPROM.get(6, yCalM);
+  EEPROM.get(11,xCalC);
+  EEPROM.get(18,yCalC);
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
@@ -197,8 +215,15 @@ void setup() {
   xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 3, &TaskHandle_5);
 }
 
-static void switchevent(lv_event_t * e)
-{
+static void event_handler_btn(lv_event_t * e){
+  lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_CLICKED){
+      calibrateTouchScreen();
+    }
+}
+
+static void event_handler_sw(lv_event_t * e){
+
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
     if(code == LV_EVENT_VALUE_CHANGED) {
@@ -227,25 +252,32 @@ void BuildUI(void * parameter) {
 
     tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 50);
 
-    lv_obj_t *tab1 = lv_tabview_add_tab(tabview, "Test");
-
-    lv_obj_t *tab2 = lv_tabview_add_tab(tabview, "Settings");
+    tab1 = lv_tabview_add_tab(tabview, "Test");
+    tab2 = lv_tabview_add_tab(tabview, "Settings");
     
     WiFisw = lv_switch_create(tab2);
-    lv_obj_add_event_cb(WiFisw, switchevent, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(WiFisw, event_handler_sw, LV_EVENT_ALL, NULL);
 
-    lv_obj_t * WiFilabel = lv_label_create(tab2);
+    WiFilabel = lv_label_create(tab2);
     lv_label_set_text(WiFilabel, "WiFi");
     lv_obj_align_to(WiFilabel, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
 
     NTPsw = lv_switch_create(tab2);
     lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
-    lv_obj_add_event_cb(NTPsw, switchevent, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(NTPsw, event_handler_sw, LV_EVENT_ALL, NULL);
     lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
 
-    lv_obj_t * NTPlabel = lv_label_create(tab2);
+    NTPlabel = lv_label_create(tab2);
     lv_label_set_text(NTPlabel, "NTP");
     lv_obj_align_to(NTPlabel, NTPsw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
+
+    CalBtn = lv_btn_create(tab2);
+    lv_obj_add_event_cb(CalBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+
+    CalLabel = lv_label_create(CalBtn);
+    lv_obj_align_to(CalBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 20);
+    lv_label_set_text(CalLabel, "Calibrate Touch");
+    lv_obj_center(CalLabel);
 
     vTaskDelete(NULL);
 }
