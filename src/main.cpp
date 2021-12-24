@@ -241,6 +241,7 @@ void BuildUI(void * parameter) {
     NTPsw = lv_switch_create(tab2);
     lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
     lv_obj_add_event_cb(NTPsw, switchevent, LV_EVENT_ALL, NULL);
+    lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
 
     lv_obj_t * NTPlabel = lv_label_create(tab2);
     lv_label_set_text(NTPlabel, "NTP");
