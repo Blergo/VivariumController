@@ -13,12 +13,11 @@
 #define TOUCH_CS  34
 #define TOUCH_IRQ 35
 
-const char* ntpServer = "pool.ntp.org";
+char ntpServer[] = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
 const int   daylightOffset_sec = 3600;
-
-const char* ssid = "InfiniteWisdom";
-const char* password = "K1net1CK1net1C";
+char ssid[32];
+char password[32];
 
 const int MY_DISP_HOR_RES = 320;
 const int MY_DISP_VER_RES = 240;
@@ -51,21 +50,21 @@ TaskHandle_t TaskHandle_6;
 TaskHandle_t TaskHandle_7;
 
 
-lv_obj_t *tabview;
-lv_obj_t *tab1;
-lv_obj_t *tab2;
-lv_obj_t *WiFisw;
-lv_obj_t *WiFilabel;
-lv_obj_t *WiFiSetBtn;
-lv_obj_t *WiFiSetLabel;
-lv_obj_t *WiFiSetBkBtn;
-lv_obj_t *WiFiSetBkLabel;
-lv_obj_t *NTPsw;
-lv_obj_t *NTPlabel;
-lv_obj_t *CalBtn;
-lv_obj_t *CalLabel;
-lv_obj_t *SaveBtn;
-lv_obj_t *SaveLabel;
+lv_obj_t * tabview;
+lv_obj_t * tab1;
+lv_obj_t * tab2;
+lv_obj_t * WiFisw;
+lv_obj_t * WiFilabel;
+lv_obj_t * WiFiSetBtn;
+lv_obj_t * WiFiSetLabel;
+lv_obj_t * WiFiSetBkBtn;
+lv_obj_t * WiFiSetBkLabel;
+lv_obj_t * NTPsw;
+lv_obj_t * NTPlabel;
+lv_obj_t * CalBtn;
+lv_obj_t * CalLabel;
+lv_obj_t * SaveBtn;
+lv_obj_t * SaveLabel;
 lv_obj_t * WiFiSSID;
 lv_obj_t * WiFiSSIDLabel;
 lv_obj_t * WiFiPass;
@@ -190,7 +189,7 @@ void setup() {
   ledcAttachPin(blPin, blChannel);
   xTaskCreate(blPWM, "Backlight PWM", 1500, NULL, 1, &TaskHandle_3);
 
-  EEPROM.begin(26);
+  EEPROM.begin(90);
   EEPROM.get(0, xCalM);
   EEPROM.get(6, yCalM);
   EEPROM.get(11, xCalC);
@@ -220,10 +219,14 @@ void setup() {
       while (1) delay(10);
   }
 
-  vTaskDelay(50);
+  vTaskDelay(100);
 
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
+    EEPROM.get(26,ssid);
+    EEPROM.get(58,password);
+    lv_textarea_set_placeholder_text(WiFiSSID, ssid);
+    lv_textarea_set_placeholder_text(WiFiPass, password);
     EEPROM.get(25, NTPState);
     xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
   }
@@ -371,9 +374,9 @@ void BuildUI(void * parameter) {
     lv_textarea_set_one_line(WiFiSSID, true);
     lv_textarea_set_password_mode(WiFiSSID, false);
     lv_obj_set_width(WiFiSSID, lv_pct(60));
+    lv_textarea_set_max_length(WiFiSSID, 32);
     lv_obj_add_event_cb(WiFiSSID, NULL, LV_EVENT_ALL, NULL);
     lv_obj_align(WiFiSSID, LV_ALIGN_TOP_LEFT, 0, 20);
-    lv_textarea_set_placeholder_text(WiFiSSID, ssid);
     lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
 
     WiFiSSIDLabel = lv_label_create(tab2);
@@ -385,9 +388,9 @@ void BuildUI(void * parameter) {
     lv_textarea_set_one_line(WiFiPass, true);
     lv_textarea_set_password_mode(WiFiPass, false);
     lv_obj_set_width(WiFiPass, lv_pct(60));
+    lv_textarea_set_max_length(WiFiPass, 32);
     lv_obj_add_event_cb(WiFiPass, NULL, LV_EVENT_ALL, NULL);
     lv_obj_align_to(WiFiPass, WiFiSSID, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
-    lv_textarea_set_placeholder_text(WiFiPass, password);
     lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
 
     WiFiPassLabel = lv_label_create(tab2);
@@ -432,7 +435,7 @@ void blPWM(void * parameter) {
       ledcWrite(blChannel, setDuty);
       curDuty = setDuty;
     }
-    vTaskDelay(50);
+    vTaskDelay(100);
   }
 }
 
@@ -471,10 +474,12 @@ void CheckRTC(void * parameter) {
 void SaveSettings(void * parameter) {
   EEPROM.put(0, xCalM);
   EEPROM.put(6, yCalM);
-  EEPROM.put(11,xCalC);
-  EEPROM.put(18,yCalC);
+  EEPROM.put(11, xCalC);
+  EEPROM.put(18, yCalC);
   EEPROM.put(24, WiFiState);
   EEPROM.put(25, NTPState);
+  EEPROM.put(26, ssid);
+  EEPROM.put(58, password);
   EEPROM.commit();
   vTaskDelete(NULL);
 }
