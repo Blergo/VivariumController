@@ -394,7 +394,7 @@ void BuildUI(void * parameter) {
     lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
 
     WiFiPassLabel = lv_label_create(tab2);
-    lv_label_set_text(WiFiPassLabel, "WiFi SSID:");
+    lv_label_set_text(WiFiPassLabel, "WiFi Password:");
     lv_obj_align_to(WiFiPassLabel, WiFiPass, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
     lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
 
@@ -451,7 +451,7 @@ void TFTUpdate(void * parameter) {
 
 void CheckRTC(void * parameter) {
   NTPState = true;
-  Serial.println("NTP Running");
+  Serial.println("NTP Client Running");
   while (WiFi.status() != WL_CONNECTED) {
     vTaskDelay(100);
   }
@@ -481,6 +481,7 @@ void SaveSettings(void * parameter) {
   EEPROM.put(26, ssid);
   EEPROM.put(58, password);
   EEPROM.commit();
+  Serial.println("Settings Saved");
   vTaskDelete(NULL);
 }
 
