@@ -200,7 +200,6 @@ void setup() {
   EEPROM.get(11, xCalC);
   EEPROM.get(18, yCalC);
   EEPROM.get(24, WiFiState);
-  EEPROM.get(25, NTPState);
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
@@ -229,6 +228,7 @@ void setup() {
 
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
+    EEPROM.get(25, NTPState);
     xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
   }
   else if(WiFiState == false){
