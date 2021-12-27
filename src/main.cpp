@@ -49,7 +49,7 @@ TaskHandle_t TaskHandle_5;
 TaskHandle_t TaskHandle_6;
 TaskHandle_t TaskHandle_7;
 
-
+lv_obj_t * keyboard;
 lv_obj_t * tabview;
 lv_obj_t * tab1;
 lv_obj_t * tab2;
@@ -266,6 +266,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBkBtn){
       lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
@@ -280,6 +281,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_add_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
@@ -312,6 +314,19 @@ static void event_handler_sw(lv_event_t * e){
         vTaskDelete(TaskHandle_4);
         NTPState = false;
       }
+    }
+}
+
+static void ta_event_cb(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * ta = lv_event_get_target(e);
+    if(code == LV_EVENT_CLICKED || code == LV_EVENT_FOCUSED) {
+        if(keyboard != NULL) lv_keyboard_set_textarea(keyboard, ta);
+    }
+
+    else if(code == LV_EVENT_READY) {
+        
     }
 }
 
@@ -361,22 +376,13 @@ void BuildUI(void * parameter) {
     lv_label_set_text(SaveLabel, "Save Settings");
     lv_obj_center(SaveLabel);
 
-    WiFiSetBkBtn = lv_btn_create(tab2);
-    lv_obj_add_event_cb(WiFiSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-    lv_obj_align_to(WiFiSetBkBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 150, 20);
-    lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
-
-    WiFiSetBkLabel = lv_label_create(WiFiSetBkBtn);
-    lv_label_set_text(WiFiSetBkLabel, "Back");
-    lv_obj_center(WiFiSetBkLabel);
-
     WiFiSSID = lv_textarea_create(tab2);
     lv_textarea_set_one_line(WiFiSSID, true);
     lv_textarea_set_password_mode(WiFiSSID, false);
     lv_obj_set_width(WiFiSSID, lv_pct(60));
     lv_textarea_set_max_length(WiFiSSID, 32);
-    lv_obj_add_event_cb(WiFiSSID, NULL, LV_EVENT_ALL, NULL);
-    lv_obj_align(WiFiSSID, LV_ALIGN_TOP_LEFT, 0, 20);
+    lv_obj_add_event_cb(WiFiSSID, ta_event_cb, LV_EVENT_ALL, NULL);
+    lv_obj_align(WiFiSSID, LV_ALIGN_TOP_LEFT, 0, 10);
     lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
 
     WiFiSSIDLabel = lv_label_create(tab2);
@@ -389,7 +395,7 @@ void BuildUI(void * parameter) {
     lv_textarea_set_password_mode(WiFiPass, false);
     lv_obj_set_width(WiFiPass, lv_pct(60));
     lv_textarea_set_max_length(WiFiPass, 32);
-    lv_obj_add_event_cb(WiFiPass, NULL, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(WiFiPass, ta_event_cb, LV_EVENT_ALL, NULL);
     lv_obj_align_to(WiFiPass, WiFiSSID, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
     lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
 
@@ -397,6 +403,20 @@ void BuildUI(void * parameter) {
     lv_label_set_text(WiFiPassLabel, "WiFi Password:");
     lv_obj_align_to(WiFiPassLabel, WiFiPass, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
     lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
+
+    WiFiSetBkBtn = lv_btn_create(tab2);
+    lv_obj_add_event_cb(WiFiSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+    lv_obj_align(WiFiSetBkBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
+    lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+
+    WiFiSetBkLabel = lv_label_create(WiFiSetBkBtn);
+    lv_label_set_text(WiFiSetBkLabel, "Back");
+    lv_obj_center(WiFiSetBkLabel);
+
+    keyboard = lv_keyboard_create(tab2);
+    lv_obj_set_size(keyboard, LV_HOR_RES, LV_VER_RES / 3.4);
+    lv_keyboard_set_textarea(keyboard, WiFiSSID);
+    lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 
     vTaskDelete(NULL);
 }
