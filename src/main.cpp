@@ -59,6 +59,8 @@ lv_obj_t * WiFiSetBtn;
 lv_obj_t * WiFiSetLabel;
 lv_obj_t * WiFiSetBkBtn;
 lv_obj_t * WiFiSetBkLabel;
+lv_obj_t * WiFiCnctBtn;
+lv_obj_t * WiFiCnctLabel;
 lv_obj_t * NTPsw;
 lv_obj_t * NTPlabel;
 lv_obj_t * CalBtn;
@@ -262,6 +264,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
@@ -277,11 +280,19 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+      lv_textarea_set_placeholder_text(WiFiSSID, ssid);
+      lv_textarea_set_placeholder_text(WiFiPass, password);
+    }
+    else if(code == LV_EVENT_CLICKED && obj == WiFiCnctBtn){
+      strcpy(ssid, lv_textarea_get_text(WiFiSSID));
+      strcpy(password, lv_textarea_get_text(WiFiPass));
+      xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
     }
 }
 
@@ -323,10 +334,6 @@ static void ta_event_cb(lv_event_t * e)
     lv_obj_t * ta = lv_event_get_target(e);
     if(code == LV_EVENT_CLICKED || code == LV_EVENT_FOCUSED) {
         if(keyboard != NULL) lv_keyboard_set_textarea(keyboard, ta);
-    }
-
-    else if(code == LV_EVENT_READY) {
-        
     }
 }
 
@@ -404,9 +411,18 @@ void BuildUI(void * parameter) {
     lv_obj_align_to(WiFiPassLabel, WiFiPass, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
     lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
 
+    WiFiCnctBtn = lv_btn_create(tab2);
+    lv_obj_add_event_cb(WiFiCnctBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+    lv_obj_align(WiFiCnctBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
+    lv_obj_add_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
+
+    WiFiCnctLabel = lv_label_create(WiFiCnctBtn);
+    lv_label_set_text(WiFiCnctLabel, "Connect");
+    lv_obj_center(WiFiCnctLabel);
+
     WiFiSetBkBtn = lv_btn_create(tab2);
     lv_obj_add_event_cb(WiFiSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-    lv_obj_align(WiFiSetBkBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
+    lv_obj_align_to(WiFiSetBkBtn, WiFiCnctBtn, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
     lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
 
     WiFiSetBkLabel = lv_label_create(WiFiSetBkBtn);
@@ -422,14 +438,21 @@ void BuildUI(void * parameter) {
 }
 
 void initWiFi(void * parameter) {
+  if (WiFi.status() == WL_CONNECTED){
+    xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 5, &TaskHandle_6);
+  }
+  while (WiFi.status() == WL_CONNECTED){
+    vTaskDelay(100);
+  }
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi ..");
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print('.');
-    delay(1000);
+  if (WiFi.waitForConnectResult() == WL_CONNECTED) {
+    Serial.println("WiFi Connected!");
+  } 
+    else {
+    Serial.println("Unable to connect!");
   }
-  Serial.println("WiFi Connected!");
   vTaskDelete(NULL);
 }
 
@@ -438,7 +461,7 @@ void disWiFi(void * parameter) {
   Serial.print("Disconnecting WiFi ..");
   while (WiFi.status() == WL_CONNECTED) {
     Serial.print('.');
-    delay(1000);
+    delay(500);
   }
   WiFi.mode(WIFI_OFF);
   Serial.println("WiFi Disconnected!");
