@@ -18,8 +18,8 @@
 #define MODBUS_POLLING 200
 #define MODBUS_RETRY 10
 #define MODBUS_TXEN -1
-#define MODBUS_TX 0
-#define MODBUS_RX 0
+#define MODBUS_TX 25
+#define MODBUS_RX 26
 
 char ntpServer[] = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
