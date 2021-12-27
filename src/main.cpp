@@ -16,6 +16,10 @@
 #define MODBUS_BAUD 9600
 #define MODBUS_TIMEOUT 1000
 #define MODBUS_POLLING 200
+#define MODBUS_RETRY 10
+#define MODBUS_TXEN -1
+#define MODBUS_TX 0
+#define MODBUS_RX 0
 
 char ntpServer[] = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
@@ -186,6 +190,7 @@ void touchpad_read(lv_indev_drv_t * drv, lv_indev_data_t*data){
 
 void setup() {
   Serial.begin(9600);
+  Serial1.begin(9600, MODBUS_RX, MODBUS_TX);
   tft.init();
   tft.setRotation(1);
   ts.begin();

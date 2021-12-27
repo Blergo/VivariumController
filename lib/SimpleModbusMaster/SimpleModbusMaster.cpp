@@ -285,18 +285,18 @@ unsigned char getData()
     unsigned char buffer = 0;
     unsigned char overflowFlag = 0;
 
-    while (Serial.available()) {
+    while (Serial1.available()) {
         // The maximum number of bytes is limited to the serial buffer size of 128 bytes
         // If more bytes is received than the BUFFER_SIZE the overflow flag will be set and the
         // serial buffer will be red untill all the data is cleared from the receive buffer,
         // while the slave is still responding.
         if (overflowFlag)
-            Serial.read();
+            Serial1.read();
         else {
             if (buffer == BUFFER_SIZE)
                 overflowFlag = 1;
 
-            frame[buffer] = Serial.read();
+            frame[buffer] = Serial1.read();
             buffer++;
         }
 
@@ -323,7 +323,7 @@ void modbus_configure(long baud, unsigned int _timeout, unsigned int _polling,
                       unsigned char _retry_count, unsigned char _TxEnablePin,
                       Packet* _packet, unsigned int _total_no_of_packets)
 {
-    Serial.begin(baud);
+    Serial1.begin(baud);
 
     if (_TxEnablePin > 1) {
         // pin 0 & pin 1 are reserved for RX/TX. To disable set _TxEnablePin < 2
@@ -394,9 +394,9 @@ void sendPacket(unsigned char bufferSize)
         digitalWrite(TxEnablePin, HIGH);
 
     for (unsigned char i = 0; i < bufferSize; i++)
-        Serial.write(frame[i]);
+        Serial1.write(frame[i]);
 
-    Serial.flush();
+    Serial1.flush();
 
     // allow a frame delay to indicate end of transmission
     delayMicroseconds(T3_5);
