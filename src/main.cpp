@@ -9,19 +9,23 @@
 #include <lv_conf.h>
 #include <lvgl.h>
 #include <EEPROM.h>
-#include <SimpleModbusMaster.h>
+#include <ModbusRtu.h>
 
 #define TOUCH_CS  34
 #define TOUCH_IRQ 35
 #define MODBUS_BAUD 9600
 #define MODBUS_TIMEOUT 1000
-#define MODBUS_POLLING 200
+#define MODBUS_POLLING 1000
 #define MODBUS_RETRY 10
 #define MODBUS_TXEN -1
-#define MODBUS_TX 26
-#define MODBUS_RX 25
+#define MODBUS_TX 25
+#define MODBUS_RX 26
 
-unsigned int regs[5];
+uint16_t au16data[16];
+uint8_t u8state;
+Modbus master(0,Serial1,0);
+modbus_t telegram;
+unsigned long u32wait;
 
 char ntpServer[] = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
@@ -58,6 +62,7 @@ TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
 TaskHandle_t TaskHandle_6;
 TaskHandle_t TaskHandle_7;
+TaskHandle_t TaskHandle_8;
 
 lv_obj_t * keyboard;
 lv_obj_t * tabview;
@@ -98,6 +103,7 @@ void initWiFi(void * parameter);
 void disWiFi(void * parameter);
 void blPWM(void * parameter);
 void SaveSettings(void * parameter);
+void ModbusUpdate(void * parameter);
 
 class ScreenPoint {
 
@@ -225,6 +231,8 @@ void setup() {
 
   xTaskCreate(BuildUI, "Build UI", 2500, NULL, 6, &TaskHandle_1);
   blTimeout = millis()+blDuration;
+
+  xTaskCreate(ModbusUpdate, "Modbus Update", 2000, NULL, 5, &TaskHandle_8);
 
   if(!rtc.begin()) {
       Serial.println("Couldn't find RTC!");
@@ -537,6 +545,44 @@ void SaveSettings(void * parameter) {
   EEPROM.commit();
   Serial.println("Settings Saved");
   vTaskDelete(NULL);
+}
+
+void ModbusUpdate(void * parameter){
+  master.start();
+  master.setTimeOut( 2000 );
+  u32wait = millis() + 1000;
+  u8state = 0; 
+
+  for(;;){
+    switch( u8state ) {
+      case 0: 
+        if (millis() > u32wait) u8state++; // wait state
+      break;
+      case 1: 
+        telegram.u8id = 1; // slave address
+        telegram.u8fct = 3; // function code (this one is registers read)
+        telegram.u16RegAdd = 0; // start address in slave
+        telegram.u16CoilsNo = 5; // number of elements (coils or registers) to read
+        telegram.au16reg = au16data; // pointer to a memory array in the Arduino
+
+        master.query( telegram ); // send query (only once)
+        u8state++;
+      break;
+      case 2:
+        master.poll(); // check incoming messages
+        if (master.getState() == COM_IDLE) {
+          u8state = 0;
+          u32wait = millis() + 100; 
+        }
+      break;
+    }
+    Serial.println(au16data[0]);
+    Serial.println(au16data[1]);
+    Serial.println(au16data[2]);
+    Serial.println(au16data[3]);
+    Serial.println(au16data[4]);
+    vTaskDelay(200);
+  }
 }
 
 void loop() {
