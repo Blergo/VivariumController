@@ -9,6 +9,7 @@
 #include <lv_conf.h>
 #include <lvgl.h>
 #include <EEPROM.h>
+#include <SimpleModbusMaster.h>
 
 #define TOUCH_CS  34
 #define TOUCH_IRQ 35
