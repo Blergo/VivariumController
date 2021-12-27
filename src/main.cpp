@@ -48,6 +48,7 @@ TaskHandle_t TaskHandle_3;
 TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
 TaskHandle_t TaskHandle_6;
+TaskHandle_t TaskHandle_7;
 
 
 lv_obj_t *tabview;
@@ -81,6 +82,7 @@ void CheckRTC(void * parameter);
 void initWiFi(void * parameter);
 void disWiFi(void * parameter);
 void blPWM(void * parameter);
+void SaveSettings(void * parameter);
 
 class ScreenPoint {
 
@@ -104,16 +106,6 @@ if(xCoord >= tft.width()) xCoord = tft.width() - 1;
 if(yCoord < 0) yCoord = 0;
 if(yCoord >= tft.height()) yCoord = tft.height() - 1;
 return(ScreenPoint(xCoord, yCoord));
-}
-
-void SaveSettings(){
-  EEPROM.put(0, xCalM);
-  EEPROM.put(6, yCalM);
-  EEPROM.put(11,xCalC);
-  EEPROM.put(18,yCalC);
-  EEPROM.put(24, WiFiState);
-  EEPROM.put(25, NTPState);
-  EEPROM.commit();
 }
 
 void calibrateTouchScreen(){
@@ -252,7 +244,7 @@ static void event_handler_btn(lv_event_t * e){
       calibrateTouchScreen();
     }
     else if(code == LV_EVENT_CLICKED && obj == SaveBtn){
-      SaveSettings();
+      xTaskCreate(SaveSettings, "Save Settings", 2000, NULL, 2, &TaskHandle_7);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBtn){
       lv_obj_add_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
@@ -433,6 +425,17 @@ void CheckRTC(void * parameter) {
       rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
     }
   }
+}
+
+void SaveSettings(void * parameter) {
+  EEPROM.put(0, xCalM);
+  EEPROM.put(6, yCalM);
+  EEPROM.put(11,xCalC);
+  EEPROM.put(18,yCalC);
+  EEPROM.put(24, WiFiState);
+  EEPROM.put(25, NTPState);
+  EEPROM.commit();
+  vTaskDelete(NULL);
 }
 
 void loop() {
