@@ -66,6 +66,10 @@ lv_obj_t *CalBtn;
 lv_obj_t *CalLabel;
 lv_obj_t *SaveBtn;
 lv_obj_t *SaveLabel;
+lv_obj_t * WiFiSSID;
+lv_obj_t * WiFiSSIDLabel;
+lv_obj_t * WiFiPass;
+lv_obj_t * WiFiPassLabel;
 
 
 static lv_disp_draw_buf_t disp_buf;
@@ -207,7 +211,7 @@ void setup() {
   indev_drv.read_cb = touchpad_read;
   lv_indev_drv_register(&indev_drv);
 
-  xTaskCreate(BuildUI, "Build UI", 2000, NULL, 6, &TaskHandle_1);
+  xTaskCreate(BuildUI, "Build UI", 2500, NULL, 6, &TaskHandle_1);
   blTimeout = millis()+blDuration;
 
   if(!rtc.begin()) {
@@ -216,7 +220,15 @@ void setup() {
       while (1) delay(10);
   }
 
+  vTaskDelay(50);
+
   lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
+  lv_textarea_set_placeholder_text(WiFiSSID, ssid);
+  lv_textarea_set_placeholder_text(WiFiPass, password);
 
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
@@ -255,6 +267,10 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBkBtn){
       lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
@@ -265,6 +281,10 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
@@ -353,6 +373,28 @@ void BuildUI(void * parameter) {
     WiFiSetBkLabel = lv_label_create(WiFiSetBkBtn);
     lv_label_set_text(WiFiSetBkLabel, "Back");
     lv_obj_center(WiFiSetBkLabel);
+
+    WiFiSSID = lv_textarea_create(tab2);
+    lv_textarea_set_one_line(WiFiSSID, true);
+    lv_textarea_set_password_mode(WiFiSSID, false);
+    lv_obj_set_width(WiFiSSID, lv_pct(60));
+    lv_obj_add_event_cb(WiFiSSID, NULL, LV_EVENT_ALL, NULL);
+    lv_obj_align(WiFiSSID, LV_ALIGN_TOP_LEFT, 0, 20);
+
+    WiFiSSIDLabel = lv_label_create(tab2);
+    lv_label_set_text(WiFiSSIDLabel, "WiFi SSID:");
+    lv_obj_align_to(WiFiSSIDLabel, WiFiSSID, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
+
+    WiFiPass = lv_textarea_create(tab2);
+    lv_textarea_set_one_line(WiFiPass, true);
+    lv_textarea_set_password_mode(WiFiPass, false);
+    lv_obj_set_width(WiFiPass, lv_pct(60));
+    lv_obj_add_event_cb(WiFiPass, NULL, LV_EVENT_ALL, NULL);
+    lv_obj_align_to(WiFiPass, WiFiSSID, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
+
+    WiFiPassLabel = lv_label_create(tab2);
+    lv_label_set_text(WiFiPassLabel, "WiFi SSID:");
+    lv_obj_align_to(WiFiPassLabel, WiFiPass, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
 
     vTaskDelete(NULL);
 }
