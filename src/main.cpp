@@ -13,6 +13,9 @@
 
 #define TOUCH_CS  34
 #define TOUCH_IRQ 35
+#define MODBUS_BAUD 9600
+#define MODBUS_TIMEOUT 1000
+#define MODBUS_POLLING 200
 
 char ntpServer[] = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
