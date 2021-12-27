@@ -222,14 +222,6 @@ void setup() {
 
   vTaskDelay(50);
 
-  lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
-  lv_textarea_set_placeholder_text(WiFiSSID, ssid);
-  lv_textarea_set_placeholder_text(WiFiPass, password);
-
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
     EEPROM.get(25, NTPState);
@@ -369,6 +361,7 @@ void BuildUI(void * parameter) {
     WiFiSetBkBtn = lv_btn_create(tab2);
     lv_obj_add_event_cb(WiFiSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
     lv_obj_align_to(WiFiSetBkBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 150, 20);
+    lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
 
     WiFiSetBkLabel = lv_label_create(WiFiSetBkBtn);
     lv_label_set_text(WiFiSetBkLabel, "Back");
@@ -380,10 +373,13 @@ void BuildUI(void * parameter) {
     lv_obj_set_width(WiFiSSID, lv_pct(60));
     lv_obj_add_event_cb(WiFiSSID, NULL, LV_EVENT_ALL, NULL);
     lv_obj_align(WiFiSSID, LV_ALIGN_TOP_LEFT, 0, 20);
+    lv_textarea_set_placeholder_text(WiFiSSID, ssid);
+    lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
 
     WiFiSSIDLabel = lv_label_create(tab2);
     lv_label_set_text(WiFiSSIDLabel, "WiFi SSID:");
     lv_obj_align_to(WiFiSSIDLabel, WiFiSSID, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
+    lv_obj_add_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
 
     WiFiPass = lv_textarea_create(tab2);
     lv_textarea_set_one_line(WiFiPass, true);
@@ -391,10 +387,13 @@ void BuildUI(void * parameter) {
     lv_obj_set_width(WiFiPass, lv_pct(60));
     lv_obj_add_event_cb(WiFiPass, NULL, LV_EVENT_ALL, NULL);
     lv_obj_align_to(WiFiPass, WiFiSSID, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
+    lv_textarea_set_placeholder_text(WiFiPass, password);
+    lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
 
     WiFiPassLabel = lv_label_create(tab2);
     lv_label_set_text(WiFiPassLabel, "WiFi SSID:");
     lv_obj_align_to(WiFiPassLabel, WiFiPass, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
+    lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
 
     vTaskDelete(NULL);
 }
