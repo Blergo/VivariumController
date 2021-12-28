@@ -105,8 +105,6 @@ lv_obj_t * WiFiPassLabel;
 lv_obj_t * WiFiConnected;
 lv_obj_t * WiFiFailed;
 
-lv_obj_t * ModbusTestBtn;
-lv_obj_t * ModbusTestLabel;
 lv_obj_t * TempLabel;
 lv_obj_t * HumLabel;
 
@@ -276,9 +274,6 @@ static void event_handler_btn(lv_event_t * e){
         break;
       }
       WiFiStatus = 0;
-    }
-    else if(code == LV_EVENT_CLICKED && obj == ModbusTestBtn){
-      
     }
 }
 
@@ -462,14 +457,6 @@ void setup() {
   WiFiFailed = lv_msgbox_create(tab2, NULL, "Connection Failed!", NULL, true);
   lv_obj_center(WiFiFailed);
   lv_obj_add_flag(WiFiFailed, LV_OBJ_FLAG_HIDDEN);
-
-  ModbusTestBtn = lv_btn_create(tab1);
-  lv_obj_add_event_cb(ModbusTestBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-  lv_obj_align(ModbusTestBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
-
-  ModbusTestLabel = lv_label_create(ModbusTestBtn);
-  lv_label_set_text(ModbusTestLabel, "Modbus");
-  lv_obj_center(ModbusTestLabel);
 
   TempLabel = lv_label_create(tab1);
   lv_obj_align(TempLabel, LV_ALIGN_TOP_LEFT, 0, 20);
