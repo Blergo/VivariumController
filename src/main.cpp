@@ -26,6 +26,7 @@ uint8_t u8state;
 Modbus master(0,Serial1,0);
 modbus_t telegram;
 unsigned long u32wait;
+bool modbusrun;
 
 int SlaveID;
 int Function;
@@ -51,7 +52,7 @@ const int MY_DISP_HOR_RES = 320;
 const int MY_DISP_VER_RES = 240;
 
 TFT_eSPI tft = TFT_eSPI(); 
-XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
+XPT2046_Touchscreen ts(TOUCH_CS);
 RTC_DS1307 rtc;
 
 float xCalM = 0.0, yCalM = 0.0;
@@ -69,14 +70,13 @@ int blTimeout = 0;
 bool WiFiState;
 bool NTPState;
 
-TaskHandle_t TaskHandle_1;
 TaskHandle_t TaskHandle_2;
-TaskHandle_t TaskHandle_3;
 TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
 TaskHandle_t TaskHandle_6;
 TaskHandle_t TaskHandle_7;
 TaskHandle_t TaskHandle_8;
+TaskHandle_t TaskHandle_9;
 
 lv_obj_t * keyboard;
 lv_obj_t * tabview;
@@ -115,14 +115,13 @@ static lv_indev_drv_t indev_drv;
 
 struct tm timeinfo;
 
-void BuildUI(void * parameters1);
 void initWiFi(void * parameters2);
-void blPWM(void * parameters3);
 void CheckRTC(void * parameters4);
 void TFTUpdate(void * parameters5);
 void disWiFi(void * parameters6);
 void SaveSettings(void * parameters7);
 void ModbusWorker(void * parameters8);
+void MainWork(void * Parameters9);
 
 class ScreenPoint {
 
@@ -200,10 +199,6 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 
 void touchpad_read(lv_indev_drv_t * drv, lv_indev_data_t*data){
   if (ts.touched()) {
-    if (blTimeout == 0){
-      setDuty=255;
-    }
-    blTimeout = millis()+blDuration;
     ScreenPoint sp = ScreenPoint();
     TS_Point p = ts.getPoint();
     sp = getScreenCoords(p.x, p.y);
@@ -213,73 +208,6 @@ void touchpad_read(lv_indev_drv_t * drv, lv_indev_data_t*data){
   } else {
     data->state = LV_INDEV_STATE_RELEASED; 
   }
-}
-
-void setup() {
-  Serial.begin(9600);
-  Serial1.begin(9600, SERIAL_8N1, MODBUS_RX, MODBUS_TX);
-  tft.init();
-  tft.setRotation(1);
-  ts.begin();
-  ts.setRotation(1);
-
-  ledcSetup(blChannel, blFreq, blResolution);
-  ledcAttachPin(blPin, blChannel);
-  xTaskCreate(blPWM, "Backlight PWM", 1500, NULL, 1, &TaskHandle_3);
-
-  EEPROM.begin(90);
-  EEPROM.get(0, xCalM);
-  EEPROM.get(6, yCalM);
-  EEPROM.get(11, xCalC);
-  EEPROM.get(18, yCalC);
-  EEPROM.get(24, WiFiState);
-
-  lv_init();
-  lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
-  lv_disp_drv_init(&disp_drv);
-  disp_drv.draw_buf = &disp_buf;
-  disp_drv.flush_cb = my_disp_flush;
-  disp_drv.hor_res = MY_DISP_HOR_RES;
-  disp_drv.ver_res = MY_DISP_VER_RES;
-  disp = lv_disp_drv_register(&disp_drv);
-
-  lv_indev_drv_init(&indev_drv);
-  indev_drv.type = LV_INDEV_TYPE_POINTER;
-  indev_drv.read_cb = touchpad_read;
-  lv_indev_drv_register(&indev_drv);
-
-  xTaskCreate(BuildUI, "Build UI", 2500, NULL, 6, &TaskHandle_1);
-  blTimeout = millis()+blDuration;
-
-  if(!rtc.begin()) {
-      Serial.println("Couldn't find RTC!");
-      Serial.flush();
-      while (1) delay(10);
-  }
-
-  vTaskDelay(100);
-
-  if(WiFiState == true){
-    lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
-    EEPROM.get(26,ssid);
-    EEPROM.get(58,password);
-    lv_textarea_set_placeholder_text(WiFiSSID, ssid);
-    lv_textarea_set_placeholder_text(WiFiPass, password);
-    EEPROM.get(25, NTPState);
-    xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
-  }
-  else if(WiFiState == false){
-    lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
-    lv_obj_add_state(WiFiSetBtn, LV_STATE_DISABLED);
-  }
-  if(NTPState == true){
-    lv_obj_add_state(NTPsw, LV_STATE_CHECKED);
-    xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);
-  }
-
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-
-  xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 3, &TaskHandle_5);
 }
 
 static void event_handler_btn(lv_event_t * e){
@@ -328,18 +256,10 @@ static void event_handler_btn(lv_event_t * e){
     else if(code == LV_EVENT_CLICKED && obj == WiFiCnctBtn){
       strcpy(ssid, lv_textarea_get_text(WiFiSSID));
       strcpy(password, lv_textarea_get_text(WiFiPass));
-      xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
+      xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, &TaskHandle_2);
     }
     else if(code == LV_EVENT_CLICKED && obj == ModbusTestBtn){
-      SlaveID = 1;
-      Function = 3;
-      RegAdd = 0;
-      RegNo = 6;
-      Param.SlaveID = SlaveID;
-      Param.Function = Function;
-      Param.RegAdd = RegAdd;
-      Param.RegNo = RegNo;
-      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 5, &TaskHandle_8);
+      
     }
 }
 
@@ -351,14 +271,14 @@ static void event_handler_sw(lv_event_t * e){
       if(obj == WiFisw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
         lv_obj_clear_state(NTPsw, LV_STATE_DISABLED);
         lv_obj_clear_state(WiFiSetBtn, LV_STATE_DISABLED);
-        xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
+        xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, &TaskHandle_2);
         WiFiState = true;
       }
       else if(obj == WiFisw){
         lv_obj_clear_state(NTPsw, LV_STATE_CHECKED);
         lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
         lv_obj_add_state(WiFiSetBtn, LV_STATE_DISABLED);
-        xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 5, &TaskHandle_6);
+        xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, &TaskHandle_6);
         WiFiState = false;
         if(NTPState == true){
           vTaskDelete(TaskHandle_4);
@@ -366,7 +286,7 @@ static void event_handler_sw(lv_event_t * e){
         }
       }
       else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
-        xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 4, &TaskHandle_4);      
+        xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 2, &TaskHandle_4);      
       }
       else if (obj == NTPsw){
         vTaskDelete(TaskHandle_4);
@@ -384,123 +304,180 @@ static void ta_event_cb(lv_event_t * e)
     }
 }
 
-void BuildUI(void * parameters1) {
+void setup() {
+  Serial.begin(9600);
+  Serial1.begin(9600, SERIAL_8N1, MODBUS_RX, MODBUS_TX);
+  tft.init();
+  tft.setRotation(1);
+  ts.begin();
+  ts.setRotation(1);
 
-    tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 30);
+  ledcSetup(blChannel, blFreq, blResolution);
+  ledcAttachPin(blPin, blChannel);
+  blTimeout = millis()+blDuration;
 
-    tab1 = lv_tabview_add_tab(tabview, "Test");
-    tab2 = lv_tabview_add_tab(tabview, "Settings");
+  EEPROM.begin(90);
+  EEPROM.get(0, xCalM);
+  EEPROM.get(6, yCalM);
+  EEPROM.get(11, xCalC);
+  EEPROM.get(18, yCalC);
+  EEPROM.get(24, WiFiState);
+
+  lv_init();
+  lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
+  lv_disp_drv_init(&disp_drv);
+  disp_drv.draw_buf = &disp_buf;
+  disp_drv.flush_cb = my_disp_flush;
+  disp_drv.hor_res = MY_DISP_HOR_RES;
+  disp_drv.ver_res = MY_DISP_VER_RES;
+  disp = lv_disp_drv_register(&disp_drv);
+
+  lv_indev_drv_init(&indev_drv);
+  indev_drv.type = LV_INDEV_TYPE_POINTER;
+  indev_drv.read_cb = touchpad_read;
+  lv_indev_drv_register(&indev_drv);
+
+  tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 30);
+
+  tab1 = lv_tabview_add_tab(tabview, "Test");
+  tab2 = lv_tabview_add_tab(tabview, "Settings");
     
-    WiFisw = lv_switch_create(tab2);
-    lv_obj_add_event_cb(WiFisw, event_handler_sw, LV_EVENT_ALL, NULL);
+  WiFisw = lv_switch_create(tab2);
+  lv_obj_add_event_cb(WiFisw, event_handler_sw, LV_EVENT_ALL, NULL);
 
-    WiFilabel = lv_label_create(tab2);
-    lv_label_set_text(WiFilabel, "WiFi");
-    lv_obj_align_to(WiFilabel, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
+  WiFilabel = lv_label_create(tab2);
+  lv_label_set_text(WiFilabel, "WiFi");
+  lv_obj_align_to(WiFilabel, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
 
-    WiFiSetBtn = lv_btn_create(tab2);
-    lv_obj_add_event_cb(WiFiSetBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-    lv_obj_align_to(WiFiSetBtn, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 100, 0);
+  WiFiSetBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(WiFiSetBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align_to(WiFiSetBtn, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 100, 0);
 
-    WiFiSetLabel = lv_label_create(WiFiSetBtn);
-    lv_label_set_text(WiFiSetLabel, "WiFi Settings");
-    lv_obj_center(WiFiSetLabel);
+  WiFiSetLabel = lv_label_create(WiFiSetBtn);
+  lv_label_set_text(WiFiSetLabel, "WiFi Settings");
+  lv_obj_center(WiFiSetLabel);
 
-    NTPsw = lv_switch_create(tab2);
-    lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
-    lv_obj_add_event_cb(NTPsw, event_handler_sw, LV_EVENT_ALL, NULL);
+  NTPsw = lv_switch_create(tab2);
+  lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
+  lv_obj_add_event_cb(NTPsw, event_handler_sw, LV_EVENT_ALL, NULL);
 
-    NTPlabel = lv_label_create(tab2);
-    lv_label_set_text(NTPlabel, "NTP");
-    lv_obj_align_to(NTPlabel, NTPsw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
+  NTPlabel = lv_label_create(tab2);
+  lv_label_set_text(NTPlabel, "NTP");
+  lv_obj_align_to(NTPlabel, NTPsw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
 
-    CalBtn = lv_btn_create(tab2);
-    lv_obj_add_event_cb(CalBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-    lv_obj_align_to(CalBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 20);
+  CalBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(CalBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align_to(CalBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 20);
 
-    CalLabel = lv_label_create(CalBtn);
-    lv_label_set_text(CalLabel, "Calibrate Touch");
-    lv_obj_center(CalLabel);
+  CalLabel = lv_label_create(CalBtn);
+  lv_label_set_text(CalLabel, "Calibrate Touch");
+  lv_obj_center(CalLabel);
 
-    SaveBtn = lv_btn_create(tab2);
-    lv_obj_add_event_cb(SaveBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-    lv_obj_align_to(SaveBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 150, 20);
+  SaveBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(SaveBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align_to(SaveBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 150, 20);
 
-    SaveLabel = lv_label_create(SaveBtn);
-    lv_label_set_text(SaveLabel, "Save Settings");
-    lv_obj_center(SaveLabel);
+  SaveLabel = lv_label_create(SaveBtn);
+  lv_label_set_text(SaveLabel, "Save Settings");
+  lv_obj_center(SaveLabel);
 
-    WiFiSSID = lv_textarea_create(tab2);
-    lv_textarea_set_one_line(WiFiSSID, true);
-    lv_textarea_set_password_mode(WiFiSSID, false);
-    lv_obj_set_width(WiFiSSID, lv_pct(60));
-    lv_textarea_set_max_length(WiFiSSID, 32);
-    lv_obj_add_event_cb(WiFiSSID, ta_event_cb, LV_EVENT_ALL, NULL);
-    lv_obj_align(WiFiSSID, LV_ALIGN_TOP_LEFT, 0, 10);
-    lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
+  WiFiSSID = lv_textarea_create(tab2);
+  lv_textarea_set_one_line(WiFiSSID, true);
+  lv_textarea_set_password_mode(WiFiSSID, false);
+  lv_obj_set_width(WiFiSSID, lv_pct(60));
+  lv_textarea_set_max_length(WiFiSSID, 32);
+  lv_obj_add_event_cb(WiFiSSID, ta_event_cb, LV_EVENT_ALL, NULL);
+  lv_obj_align(WiFiSSID, LV_ALIGN_TOP_LEFT, 0, 10);
+  lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
 
-    WiFiSSIDLabel = lv_label_create(tab2);
-    lv_label_set_text(WiFiSSIDLabel, "WiFi SSID:");
-    lv_obj_align_to(WiFiSSIDLabel, WiFiSSID, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
-    lv_obj_add_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
+  WiFiSSIDLabel = lv_label_create(tab2);
+  lv_label_set_text(WiFiSSIDLabel, "WiFi SSID:");
+  lv_obj_align_to(WiFiSSIDLabel, WiFiSSID, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
+  lv_obj_add_flag(WiFiSSIDLabel, LV_OBJ_FLAG_HIDDEN);
 
-    WiFiPass = lv_textarea_create(tab2);
-    lv_textarea_set_one_line(WiFiPass, true);
-    lv_textarea_set_password_mode(WiFiPass, false);
-    lv_obj_set_width(WiFiPass, lv_pct(60));
-    lv_textarea_set_max_length(WiFiPass, 32);
-    lv_obj_add_event_cb(WiFiPass, ta_event_cb, LV_EVENT_ALL, NULL);
-    lv_obj_align_to(WiFiPass, WiFiSSID, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
-    lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
+  WiFiPass = lv_textarea_create(tab2);
+  lv_textarea_set_one_line(WiFiPass, true);
+  lv_textarea_set_password_mode(WiFiPass, false);
+  lv_obj_set_width(WiFiPass, lv_pct(60));
+  lv_textarea_set_max_length(WiFiPass, 32);
+  lv_obj_add_event_cb(WiFiPass, ta_event_cb, LV_EVENT_ALL, NULL);
+  lv_obj_align_to(WiFiPass, WiFiSSID, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
+  lv_obj_add_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
 
-    WiFiPassLabel = lv_label_create(tab2);
-    lv_label_set_text(WiFiPassLabel, "WiFi Password:");
-    lv_obj_align_to(WiFiPassLabel, WiFiPass, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
-    lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
+  WiFiPassLabel = lv_label_create(tab2);
+  lv_label_set_text(WiFiPassLabel, "WiFi Password:");
+  lv_obj_align_to(WiFiPassLabel, WiFiPass, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
+  lv_obj_add_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
 
-    WiFiCnctBtn = lv_btn_create(tab2);
-    lv_obj_add_event_cb(WiFiCnctBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-    lv_obj_align(WiFiCnctBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
-    lv_obj_add_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
+  WiFiCnctBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(WiFiCnctBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align(WiFiCnctBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
+  lv_obj_add_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
 
-    WiFiCnctLabel = lv_label_create(WiFiCnctBtn);
-    lv_label_set_text(WiFiCnctLabel, "Connect");
-    lv_obj_center(WiFiCnctLabel);
+  WiFiCnctLabel = lv_label_create(WiFiCnctBtn);
+  lv_label_set_text(WiFiCnctLabel, "Connect");
+  lv_obj_center(WiFiCnctLabel);
 
-    WiFiSetBkBtn = lv_btn_create(tab2);
-    lv_obj_add_event_cb(WiFiSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-    lv_obj_align_to(WiFiSetBkBtn, WiFiCnctBtn, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
-    lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+  WiFiSetBkBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(WiFiSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align_to(WiFiSetBkBtn, WiFiCnctBtn, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
+  lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
 
-    WiFiSetBkLabel = lv_label_create(WiFiSetBkBtn);
-    lv_label_set_text(WiFiSetBkLabel, "Back");
-    lv_obj_center(WiFiSetBkLabel);
+  WiFiSetBkLabel = lv_label_create(WiFiSetBkBtn);
+  lv_label_set_text(WiFiSetBkLabel, "Back");
+  lv_obj_center(WiFiSetBkLabel);
 
-    keyboard = lv_keyboard_create(tab2);
-    lv_obj_set_size(keyboard, LV_HOR_RES, LV_VER_RES / 3.4);
-    lv_keyboard_set_textarea(keyboard, WiFiSSID);
-    lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+  keyboard = lv_keyboard_create(tab2);
+  lv_obj_set_size(keyboard, LV_HOR_RES, LV_VER_RES / 3.4);
+  lv_keyboard_set_textarea(keyboard, WiFiSSID);
+  lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 
-    ModbusTestBtn = lv_btn_create(tab1);
-    lv_obj_add_event_cb(ModbusTestBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-    lv_obj_align(ModbusTestBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
+  ModbusTestBtn = lv_btn_create(tab1);
+  lv_obj_add_event_cb(ModbusTestBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align(ModbusTestBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
 
-    ModbusTestLabel = lv_label_create(ModbusTestBtn);
-    lv_label_set_text(ModbusTestLabel, "Modbus");
-    lv_obj_center(ModbusTestLabel);
+  ModbusTestLabel = lv_label_create(ModbusTestBtn);
+  lv_label_set_text(ModbusTestLabel, "Modbus");
+  lv_obj_center(ModbusTestLabel);
 
-    TempLabel = lv_label_create(tab1);
-    lv_obj_align(TempLabel, LV_ALIGN_TOP_LEFT, 0, 20);
+  TempLabel = lv_label_create(tab1);
+  lv_obj_align(TempLabel, LV_ALIGN_TOP_LEFT, 0, 20);
     
-    HumLabel = lv_label_create(tab1);
-    lv_obj_align_to(HumLabel, TempLabel, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
+  HumLabel = lv_label_create(tab1);
+  lv_obj_align_to(HumLabel, TempLabel, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
 
-    vTaskDelete(NULL);
+  if(!rtc.begin()) {
+      Serial.println("Couldn't find RTC!");
+      Serial.flush();
+      while (1) delay(10);
+  }
+
+  if(WiFiState == true){
+    lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
+    EEPROM.get(26,ssid);
+    EEPROM.get(58,password);
+    lv_textarea_set_placeholder_text(WiFiSSID, ssid);
+    lv_textarea_set_placeholder_text(WiFiPass, password);
+    EEPROM.get(25, NTPState);
+    xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, &TaskHandle_2);
+  }
+  else if(WiFiState == false){
+    lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
+    lv_obj_add_state(WiFiSetBtn, LV_STATE_DISABLED);
+  }
+  if(NTPState == true){
+    lv_obj_add_state(NTPsw, LV_STATE_CHECKED);
+    xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 2, &TaskHandle_4);
+  }
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 5, &TaskHandle_5);
+  xTaskCreate(MainWork, "Main Worker", 2000, NULL, 4, &TaskHandle_9);
 }
 
 void initWiFi(void * parameters2) {
   if (WiFi.status() == WL_CONNECTED){
-    xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 5, &TaskHandle_6);
+    xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, &TaskHandle_6);
   }
   while (WiFi.status() == WL_CONNECTED){
     vTaskDelay(100);
@@ -529,27 +506,36 @@ void disWiFi(void * parameters6) {
   vTaskDelete(NULL);
 }
 
-void blPWM(void * parameters3) {
-  for(;;){
-    if (millis() > blTimeout && blTimeout != 0){
-      blTimeout = 0;
-      setDuty = 50;
-    }
-    if (setDuty != curDuty) {
-      ledcWrite(blChannel, setDuty);
-      curDuty = setDuty;
-    }
-    vTaskDelay(100);
-  }
-}
-
 void TFTUpdate(void * parameters5) {
   TickType_t xLastWakeTime1;
-  const portTickType xFrequency1 = 10 / portTICK_RATE_MS;
+  const portTickType xFrequency1 = 50 / portTICK_RATE_MS;
   xLastWakeTime1 = xTaskGetTickCount ();
   for(;;) {
     vTaskDelayUntil( &xLastWakeTime1, xFrequency1 );
     lv_timer_handler();
+
+    if (ts.touched()){
+      vTaskDelay(10);
+      if (ts.touched()){
+        if (blTimeout == 0){
+        setDuty=255;
+        }
+        blTimeout = millis()+blDuration;
+      }
+    }
+
+    if (millis() > blTimeout && blTimeout != 0){
+      blTimeout = 0;
+      setDuty = 75;
+    }
+
+    if (setDuty != curDuty) {
+      ledcWrite(blChannel, setDuty);
+      curDuty = setDuty;
+    }
+
+    lv_label_set_text_fmt(TempLabel, "Temperature: %d", au16data[0]);
+    lv_label_set_text_fmt(HumLabel, "Humidity: %d", au16data[1]);
   }
 }
 
@@ -589,23 +575,33 @@ void SaveSettings(void * parameters7) {
   vTaskDelete(NULL);
 }
 
+void MainWork(void * Parameters9){
+  TickType_t xLastWakeTime;
+  const portTickType xFrequency = 1000 / portTICK_RATE_MS;
+  xLastWakeTime = xTaskGetTickCount ();
+  for(;;){
+    vTaskDelayUntil( &xLastWakeTime, xFrequency );
+    if (modbusrun == 0){
+      SlaveID = 1;
+      Function = 3;
+      RegAdd = 0;
+      RegNo = 6;
+      Param.SlaveID = SlaveID;
+      Param.Function = Function;
+      Param.RegAdd = RegAdd;
+      Param.RegNo = RegNo;
+      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+    }
+  }
+}
+
 void ModbusWorker(void * parameters8){
   ModbusParam modbus_config = *(ModbusParam *) parameters8;
-
-  Serial.print("SlaveID: ");
-  Serial.println(modbus_config.SlaveID);
-  Serial.print("Function: ");
-  Serial.println(modbus_config.Function);
-  Serial.print("RegAdd: ");
-  Serial.println(modbus_config.RegAdd);
-  Serial.print("RegNo: ");
-  Serial.println(modbus_config.RegNo);
-
   master.start();
   master.setTimeOut( 2000 );
   u32wait = millis() + 500;
   u8state = 0;
-  bool modbusrun = 1;
+  modbusrun = 1;
 
   while(modbusrun == 1){
     switch( u8state ) {
@@ -626,16 +622,11 @@ void ModbusWorker(void * parameters8){
         master.poll();
         if (master.getState() == COM_IDLE) {
           u8state = 0;
-          u32wait = millis() + 100;
           modbusrun = 0; 
         }
       break;
     }
   }
-
-  lv_label_set_text_fmt(TempLabel, "Temperature: %d", au16data[0]);
-  lv_label_set_text_fmt(HumLabel, "Humidity: %d", au16data[1]);
-
   vTaskDelete(NULL);
 }
 
