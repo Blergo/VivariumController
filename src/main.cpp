@@ -63,7 +63,6 @@ TaskHandle_t TaskHandle_5;
 TaskHandle_t TaskHandle_6;
 TaskHandle_t TaskHandle_7;
 TaskHandle_t TaskHandle_8;
-TaskHandle_t TaskHandle_9;
 
 lv_obj_t * keyboard;
 lv_obj_t * tabview;
@@ -88,6 +87,9 @@ lv_obj_t * WiFiSSIDLabel;
 lv_obj_t * WiFiPass;
 lv_obj_t * WiFiPassLabel;
 
+lv_obj_t * ModbusTestBtn;
+lv_obj_t * ModbusTestLabel;
+
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
@@ -104,8 +106,7 @@ void CheckRTC(void * parameters4);
 void TFTUpdate(void * parameters5);
 void disWiFi(void * parameters6);
 void SaveSettings(void * parameters7);
-void ModbusRead(void * parameters8);
-void ModbusWrite(void * parameters9);
+void ModbusWorker(void * parameters8);
 
 class ScreenPoint {
 
@@ -234,8 +235,6 @@ void setup() {
   xTaskCreate(BuildUI, "Build UI", 2500, NULL, 6, &TaskHandle_1);
   blTimeout = millis()+blDuration;
 
-  xTaskCreate(ModbusRead, "Modbus Read", 2000, NULL, 5, &TaskHandle_8);
-
   if(!rtc.begin()) {
       Serial.println("Couldn't find RTC!");
       Serial.flush();
@@ -314,6 +313,9 @@ static void event_handler_btn(lv_event_t * e){
       strcpy(ssid, lv_textarea_get_text(WiFiSSID));
       strcpy(password, lv_textarea_get_text(WiFiPass));
       xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
+    }
+    else if(code == LV_EVENT_CLICKED && obj == ModbusTestBtn){
+      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, NULL, 5, &TaskHandle_8);
     }
 }
 
@@ -455,6 +457,14 @@ void BuildUI(void * parameters1) {
     lv_keyboard_set_textarea(keyboard, WiFiSSID);
     lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 
+    ModbusTestBtn = lv_btn_create(tab1);
+    lv_obj_add_event_cb(ModbusTestBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+    lv_obj_align(ModbusTestBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
+
+    ModbusTestLabel = lv_label_create(ModbusTestBtn);
+    lv_label_set_text(ModbusTestLabel, "Modbus");
+    lv_obj_center(ModbusTestLabel);
+
     vTaskDelete(NULL);
 }
 
@@ -549,13 +559,14 @@ void SaveSettings(void * parameters7) {
   vTaskDelete(NULL);
 }
 
-void ModbusRead(void * parameters8){
+void ModbusWorker(void * parameters8){
   master.start();
   master.setTimeOut( 2000 );
-  u32wait = millis() + 1000;
-  u8state = 0; 
+  u32wait = millis() + 500;
+  u8state = 0;
+  bool modbusrun = 1;
 
-  for(;;){
+  while(modbusrun == 1){
     switch( u8state ) {
       case 0: 
         if (millis() > u32wait) u8state++;
@@ -574,22 +585,19 @@ void ModbusRead(void * parameters8){
         master.poll();
         if (master.getState() == COM_IDLE) {
           u8state = 0;
-          u32wait = millis() + 100; 
+          u32wait = millis() + 100;
+          modbusrun = 0; 
         }
       break;
     }
-    Serial.println(au16data[0]);
-    Serial.println(au16data[1]);
-    Serial.println(au16data[2]);
-    Serial.println(au16data[3]);
-    Serial.println(au16data[4]);
-    Serial.println(au16data[5]);
-    vTaskDelay(200);
   }
-}
-
-void ModbusWrite(void * parameters9){
-
+  Serial.println(au16data[0]);
+  Serial.println(au16data[1]);
+  Serial.println(au16data[2]);
+  Serial.println(au16data[3]);
+  Serial.println(au16data[4]);
+  Serial.println(au16data[5]);
+  vTaskDelete(NULL);
 }
 
 void loop() {
