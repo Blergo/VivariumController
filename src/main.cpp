@@ -63,6 +63,7 @@ TaskHandle_t TaskHandle_5;
 TaskHandle_t TaskHandle_6;
 TaskHandle_t TaskHandle_7;
 TaskHandle_t TaskHandle_8;
+TaskHandle_t TaskHandle_9;
 
 lv_obj_t * keyboard;
 lv_obj_t * tabview;
@@ -96,14 +97,15 @@ static lv_indev_drv_t indev_drv;
 
 struct tm timeinfo;
 
-void BuildUI(void * parameter);
-void TFTUpdate(void * parameter);
-void CheckRTC(void * parameter);
-void initWiFi(void * parameter);
-void disWiFi(void * parameter);
-void blPWM(void * parameter);
-void SaveSettings(void * parameter);
-void ModbusUpdate(void * parameter);
+void BuildUI(void * parameters1);
+void initWiFi(void * parameters2);
+void blPWM(void * parameters3);
+void CheckRTC(void * parameters4);
+void TFTUpdate(void * parameters5);
+void disWiFi(void * parameters6);
+void SaveSettings(void * parameters7);
+void ModbusRead(void * parameters8);
+void ModbusWrite(void * parameters9);
 
 class ScreenPoint {
 
@@ -232,7 +234,7 @@ void setup() {
   xTaskCreate(BuildUI, "Build UI", 2500, NULL, 6, &TaskHandle_1);
   blTimeout = millis()+blDuration;
 
-  xTaskCreate(ModbusUpdate, "Modbus Update", 2000, NULL, 5, &TaskHandle_8);
+  xTaskCreate(ModbusRead, "Modbus Read", 2000, NULL, 5, &TaskHandle_8);
 
   if(!rtc.begin()) {
       Serial.println("Couldn't find RTC!");
@@ -356,7 +358,7 @@ static void ta_event_cb(lv_event_t * e)
     }
 }
 
-void BuildUI(void * parameter) {
+void BuildUI(void * parameters1) {
 
     tabview = lv_tabview_create(lv_scr_act(), LV_DIR_TOP, 30);
 
@@ -456,7 +458,7 @@ void BuildUI(void * parameter) {
     vTaskDelete(NULL);
 }
 
-void initWiFi(void * parameter) {
+void initWiFi(void * parameters2) {
   if (WiFi.status() == WL_CONNECTED){
     xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 5, &TaskHandle_6);
   }
@@ -475,7 +477,7 @@ void initWiFi(void * parameter) {
   vTaskDelete(NULL);
 }
 
-void disWiFi(void * parameter) {
+void disWiFi(void * parameters6) {
   WiFi.disconnect();
   Serial.print("Disconnecting WiFi ..");
   while (WiFi.status() == WL_CONNECTED) {
@@ -487,7 +489,7 @@ void disWiFi(void * parameter) {
   vTaskDelete(NULL);
 }
 
-void blPWM(void * parameter) {
+void blPWM(void * parameters3) {
   for(;;){
     if (millis() > blTimeout && blTimeout != 0){
       blTimeout = 0;
@@ -501,7 +503,7 @@ void blPWM(void * parameter) {
   }
 }
 
-void TFTUpdate(void * parameter) {
+void TFTUpdate(void * parameters5) {
   TickType_t xLastWakeTime1;
   const portTickType xFrequency1 = 10 / portTICK_RATE_MS;
   xLastWakeTime1 = xTaskGetTickCount ();
@@ -511,7 +513,7 @@ void TFTUpdate(void * parameter) {
   }
 }
 
-void CheckRTC(void * parameter) {
+void CheckRTC(void * parameters4) {
   NTPState = true;
   Serial.println("NTP Client Running");
   while (WiFi.status() != WL_CONNECTED) {
@@ -533,7 +535,7 @@ void CheckRTC(void * parameter) {
   }
 }
 
-void SaveSettings(void * parameter) {
+void SaveSettings(void * parameters7) {
   EEPROM.put(0, xCalM);
   EEPROM.put(6, yCalM);
   EEPROM.put(11, xCalC);
@@ -547,7 +549,7 @@ void SaveSettings(void * parameter) {
   vTaskDelete(NULL);
 }
 
-void ModbusUpdate(void * parameter){
+void ModbusRead(void * parameters8){
   master.start();
   master.setTimeOut( 2000 );
   u32wait = millis() + 1000;
@@ -583,6 +585,10 @@ void ModbusUpdate(void * parameter){
     Serial.println(au16data[4]);
     vTaskDelay(200);
   }
+}
+
+void ModbusWrite(void * parameters9){
+  
 }
 
 void loop() {
