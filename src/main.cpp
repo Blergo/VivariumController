@@ -70,6 +70,8 @@ int blTimeout = 0;
 bool WiFiState;
 bool NTPState;
 
+uint8_t WiFiStatus;
+
 TaskHandle_t TaskHandle_2;
 TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
@@ -258,7 +260,22 @@ static void event_handler_btn(lv_event_t * e){
     else if(code == LV_EVENT_CLICKED && obj == WiFiCnctBtn){
       strcpy(ssid, lv_textarea_get_text(WiFiSSID));
       strcpy(password, lv_textarea_get_text(WiFiPass));
+      WiFiStatus = 0;
       xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, &TaskHandle_2);
+      
+      while(WiFiStatus == 0){
+        vTaskDelay(50);
+      }
+
+      switch(WiFiStatus) {
+        case 1: 
+          lv_obj_clear_flag(WiFiConnected, LV_OBJ_FLAG_HIDDEN);
+        break;
+        case 2: 
+          lv_obj_clear_flag(WiFiFailed, LV_OBJ_FLAG_HIDDEN);
+        break;
+      }
+      WiFiStatus = 0;
     }
     else if(code == LV_EVENT_CLICKED && obj == ModbusTestBtn){
       
@@ -495,14 +512,11 @@ void initWiFi(void * parameters2) {
   }
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi ..");
   if (WiFi.waitForConnectResult() == WL_CONNECTED) {
-    Serial.println("WiFi Connected!");
-    lv_obj_clear_flag(WiFiConnected, LV_OBJ_FLAG_HIDDEN);
+    WiFiStatus = 1;  
   } 
     else {
-    Serial.println("Unable to connect!");
-    lv_obj_clear_flag(WiFiFailed, LV_OBJ_FLAG_HIDDEN);
+    WiFiStatus = 2;
   }
   vTaskDelete(NULL);
 }
