@@ -100,6 +100,8 @@ lv_obj_t * WiFiSSID;
 lv_obj_t * WiFiSSIDLabel;
 lv_obj_t * WiFiPass;
 lv_obj_t * WiFiPassLabel;
+lv_obj_t * WiFiConnected;
+lv_obj_t * WiFiFailed;
 
 lv_obj_t * ModbusTestBtn;
 lv_obj_t * ModbusTestLabel;
@@ -322,6 +324,9 @@ void setup() {
   EEPROM.get(11, xCalC);
   EEPROM.get(18, yCalC);
   EEPROM.get(24, WiFiState);
+  EEPROM.get(25, NTPState);
+  EEPROM.get(26,ssid);
+  EEPROM.get(58,password);
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
@@ -432,6 +437,14 @@ void setup() {
   lv_keyboard_set_textarea(keyboard, WiFiSSID);
   lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 
+  WiFiConnected = lv_msgbox_create(tab2, NULL, "Connection Sucessfull!", NULL, true);
+  lv_obj_center(WiFiConnected);
+  lv_obj_add_flag(WiFiConnected, LV_OBJ_FLAG_HIDDEN);
+
+  WiFiFailed = lv_msgbox_create(tab2, NULL, "Connection Failed!", NULL, true);
+  lv_obj_center(WiFiFailed);
+  lv_obj_add_flag(WiFiFailed, LV_OBJ_FLAG_HIDDEN);
+
   ModbusTestBtn = lv_btn_create(tab1);
   lv_obj_add_event_cb(ModbusTestBtn, event_handler_btn, LV_EVENT_ALL, NULL);
   lv_obj_align(ModbusTestBtn, LV_ALIGN_TOP_RIGHT, 0, 20);
@@ -452,13 +465,11 @@ void setup() {
       while (1) delay(10);
   }
 
+  lv_textarea_set_placeholder_text(WiFiSSID, ssid);
+  lv_textarea_set_placeholder_text(WiFiPass, password);
+
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
-    EEPROM.get(26,ssid);
-    EEPROM.get(58,password);
-    lv_textarea_set_placeholder_text(WiFiSSID, ssid);
-    lv_textarea_set_placeholder_text(WiFiPass, password);
-    EEPROM.get(25, NTPState);
     xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, &TaskHandle_2);
   }
   else if(WiFiState == false){
@@ -487,9 +498,11 @@ void initWiFi(void * parameters2) {
   Serial.print("Connecting to WiFi ..");
   if (WiFi.waitForConnectResult() == WL_CONNECTED) {
     Serial.println("WiFi Connected!");
+    lv_obj_clear_flag(WiFiConnected, LV_OBJ_FLAG_HIDDEN);
   } 
     else {
     Serial.println("Unable to connect!");
+    lv_obj_clear_flag(WiFiFailed, LV_OBJ_FLAG_HIDDEN);
   }
   vTaskDelete(NULL);
 }
