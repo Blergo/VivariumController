@@ -541,7 +541,7 @@ void TFTUpdate(void * parameters5) {
 
     if (millis() > blTimeout && blTimeout != 0){
       blTimeout = 0;
-      setDuty = 75;
+      setDuty = 70;
     }
 
     if (setDuty != curDuty) {
