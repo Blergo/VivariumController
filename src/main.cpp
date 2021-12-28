@@ -27,6 +27,20 @@ Modbus master(0,Serial1,0);
 modbus_t telegram;
 unsigned long u32wait;
 
+int SlaveID;
+int Function;
+int RegAdd;
+int RegNo;
+
+typedef struct {
+	int SlaveID;
+  int Function;
+  int RegAdd;
+  int RegNo;
+} ModbusParam;
+
+ModbusParam Param;
+
 char ntpServer[] = "pool.ntp.org";
 const long  gmtOffset_sec = 0;
 const int   daylightOffset_sec = 3600;
@@ -315,7 +329,15 @@ static void event_handler_btn(lv_event_t * e){
       xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 5, &TaskHandle_2);
     }
     else if(code == LV_EVENT_CLICKED && obj == ModbusTestBtn){
-      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, NULL, 5, &TaskHandle_8);
+      SlaveID = 1;
+      Function = 3;
+      RegAdd = 0;
+      RegNo = 6;
+      Param.SlaveID = SlaveID;
+      Param.Function = Function;
+      Param.RegAdd = RegAdd;
+      Param.RegNo = RegNo;
+      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 5, &TaskHandle_8);
     }
 }
 
@@ -560,6 +582,17 @@ void SaveSettings(void * parameters7) {
 }
 
 void ModbusWorker(void * parameters8){
+  ModbusParam modbus_config = *(ModbusParam *) parameters8;
+
+  Serial.print("SlaveID: ");
+  Serial.println(modbus_config.SlaveID);
+  Serial.print("Function: ");
+  Serial.println(modbus_config.Function);
+  Serial.print("RegAdd: ");
+  Serial.println(modbus_config.RegAdd);
+  Serial.print("RegNo: ");
+  Serial.println(modbus_config.RegNo);
+
   master.start();
   master.setTimeOut( 2000 );
   u32wait = millis() + 500;
@@ -572,10 +605,10 @@ void ModbusWorker(void * parameters8){
         if (millis() > u32wait) u8state++;
       break;
       case 1: 
-        telegram.u8id = 1;
-        telegram.u8fct = 3;
-        telegram.u16RegAdd = 0;
-        telegram.u16CoilsNo = 6;
+        telegram.u8id = modbus_config.SlaveID;
+        telegram.u8fct = modbus_config.Function;
+        telegram.u16RegAdd = modbus_config.RegAdd;
+        telegram.u16CoilsNo = modbus_config.RegNo;
         telegram.au16reg = au16data;
 
         master.query( telegram );
@@ -591,6 +624,7 @@ void ModbusWorker(void * parameters8){
       break;
     }
   }
+  Serial.println("Results: ");
   Serial.println(au16data[0]);
   Serial.println(au16data[1]);
   Serial.println(au16data[2]);
