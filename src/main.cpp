@@ -103,6 +103,8 @@ lv_obj_t * WiFiPassLabel;
 
 lv_obj_t * ModbusTestBtn;
 lv_obj_t * ModbusTestLabel;
+lv_obj_t * TempLabel;
+lv_obj_t * HumLabel;
 
 
 static lv_disp_draw_buf_t disp_buf;
@@ -487,6 +489,12 @@ void BuildUI(void * parameters1) {
     lv_label_set_text(ModbusTestLabel, "Modbus");
     lv_obj_center(ModbusTestLabel);
 
+    TempLabel = lv_label_create(tab1);
+    lv_obj_align(TempLabel, LV_ALIGN_TOP_LEFT, 0, 20);
+    
+    HumLabel = lv_label_create(tab1);
+    lv_obj_align_to(HumLabel, TempLabel, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
+
     vTaskDelete(NULL);
 }
 
@@ -624,13 +632,10 @@ void ModbusWorker(void * parameters8){
       break;
     }
   }
-  Serial.println("Results: ");
-  Serial.println(au16data[0]);
-  Serial.println(au16data[1]);
-  Serial.println(au16data[2]);
-  Serial.println(au16data[3]);
-  Serial.println(au16data[4]);
-  Serial.println(au16data[5]);
+
+  lv_label_set_text_fmt(TempLabel, "Temperature: %d", au16data[0]);
+  lv_label_set_text_fmt(HumLabel, "Humidity: %d", au16data[1]);
+
   vTaskDelete(NULL);
 }
 
