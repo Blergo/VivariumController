@@ -366,6 +366,7 @@ void setup() {
     
   WiFisw = lv_switch_create(tab2);
   lv_obj_add_event_cb(WiFisw, event_handler_sw, LV_EVENT_ALL, NULL);
+  lv_obj_align(WiFisw, LV_ALIGN_TOP_LEFT, 10, 0);
 
   WiFilabel = lv_label_create(tab2);
   lv_label_set_text(WiFilabel, "WiFi");
@@ -373,7 +374,7 @@ void setup() {
 
   WiFiSetBtn = lv_btn_create(tab2);
   lv_obj_add_event_cb(WiFiSetBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-  lv_obj_align_to(WiFiSetBtn, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 100, 0);
+  lv_obj_align(WiFiSetBtn, LV_ALIGN_TOP_RIGHT, -10, 0);
 
   WiFiSetLabel = lv_label_create(WiFiSetBtn);
   lv_label_set_text(WiFiSetLabel, "WiFi Settings");
@@ -389,7 +390,7 @@ void setup() {
 
   CalBtn = lv_btn_create(tab2);
   lv_obj_add_event_cb(CalBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-  lv_obj_align_to(CalBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 20);
+  lv_obj_align(CalBtn, LV_ALIGN_BOTTOM_LEFT, 10, -10);
 
   CalLabel = lv_label_create(CalBtn);
   lv_label_set_text(CalLabel, "Calibrate Touch");
@@ -397,7 +398,7 @@ void setup() {
 
   SaveBtn = lv_btn_create(tab2);
   lv_obj_add_event_cb(SaveBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-  lv_obj_align_to(SaveBtn, NTPsw, LV_ALIGN_OUT_BOTTOM_RIGHT, 150, 20);
+  lv_obj_align(SaveBtn, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
 
   SaveLabel = lv_label_create(SaveBtn);
   lv_label_set_text(SaveLabel, "Save Settings");
