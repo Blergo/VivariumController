@@ -21,7 +21,7 @@
 #define MODBUS_TX 25
 #define MODBUS_RX 26
 
-uint16_t au16data[16];
+uint16_t au16data[6];
 uint8_t u8state;
 Modbus master(0,Serial1,0);
 modbus_t telegram;
@@ -564,7 +564,7 @@ void ModbusRead(void * parameters8){
         telegram.u8id = 1;
         telegram.u8fct = 3;
         telegram.u16RegAdd = 0;
-        telegram.u16CoilsNo = 5;
+        telegram.u16CoilsNo = 6;
         telegram.au16reg = au16data;
 
         master.query( telegram );
@@ -583,12 +583,13 @@ void ModbusRead(void * parameters8){
     Serial.println(au16data[2]);
     Serial.println(au16data[3]);
     Serial.println(au16data[4]);
+    Serial.println(au16data[5]);
     vTaskDelay(200);
   }
 }
 
 void ModbusWrite(void * parameters9){
-  
+
 }
 
 void loop() {
