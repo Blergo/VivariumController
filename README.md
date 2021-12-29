@@ -8,7 +8,7 @@ Register 4 = Total Modbus Errors<br />
 Register 5+ = Data (Slave Dependant)<br />
 <br />
 **Slave ID**<br />
-Not currently in use!<br />
+Not currently in use, Register left empty for future implementation.<br />
 <br />
 **Slave Capeabilities**<br />
 Not currently used by Controller but it is set on the slaves.<br />
