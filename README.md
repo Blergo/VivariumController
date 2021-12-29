@@ -13,8 +13,8 @@ Slaves have to be added one at a time and the controller periodically polls Slav
 **Slave Capeabilities**<br />
 The slave capeabilities are assigned to this register as follows. <br />
 <br />
-00 - 04 =  1 to 5 DS18B20 Temperature sensors<br />
-05 - 09 =  1 to 5 DHT22 Temperatre & Hummidity sensors<br />
+00 - 04 =  1 to 5 Qty DS18B20 Temperature sensors<br />
+05 - 09 =  1 to 5 Qty DHT22 Temperatre & Hummidity sensors<br />
 0A - 7F =  Unassigned<br />
-80 - 85 =  1 to 5 10A 250VAC Relays<br />
+80 - 85 =  1 to 5 Qty 10A 250VAC Relays<br />
 86 - FF =  Unassigned<br />
