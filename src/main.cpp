@@ -549,8 +549,8 @@ void TFTUpdate(void * parameters5) {
       curDuty = setDuty;
     }
 
-    lv_label_set_text_fmt(TempLabel, "Temperature: %d", au16data[0]);
-    lv_label_set_text_fmt(HumLabel, "Humidity: %d", au16data[1]);
+    lv_label_set_text_fmt(TempLabel, "Temperature: %d", au16data[4]);
+    lv_label_set_text_fmt(HumLabel, "Humidity: %d", au16data[5]);
   }
 }
 
