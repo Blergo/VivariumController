@@ -117,6 +117,8 @@ static lv_indev_drv_t indev_drv;
 
 struct tm timeinfo;
 
+union Pun {float f; uint32_t u;};
+
 void initWiFi(void * parameters2);
 void CheckRTC(void * parameters4);
 void TFTUpdate(void * parameters5);
@@ -147,6 +149,13 @@ if(xCoord >= tft.width()) xCoord = tft.width() - 1;
 if(yCoord < 0) yCoord = 0;
 if(yCoord >= tft.height()) yCoord = tft.height() - 1;
 return(ScreenPoint(xCoord, yCoord));
+}
+
+float decodeFloat(uint16_t *regs)
+{
+    union Pun pun;
+    pun.u = ((uint32_t)regs[0] << 16) | regs[1];
+    return pun.f;
 }
 
 void calibrateTouchScreen(){
@@ -549,8 +558,10 @@ void TFTUpdate(void * parameters5) {
       curDuty = setDuty;
     }
 
-    lv_label_set_text_fmt(TempLabel, "Temperature: %d", au16data[4]);
-    lv_label_set_text_fmt(HumLabel, "Humidity: %d", au16data[5]);
+    delay(500);
+
+    lv_label_set_text_fmt(TempLabel, "Temperature: %.2f", decodeFloat(&au16data[4]));
+    lv_label_set_text_fmt(HumLabel, "Humidity: %.2f", decodeFloat(&au16data[6]));
   }
 }
 
@@ -600,7 +611,7 @@ void MainWork(void * Parameters9){
       SlaveID = 1;
       Function = 3;
       RegAdd = 0;
-      RegNo = 6;
+      RegNo = 8;
       Param.SlaveID = SlaveID;
       Param.Function = Function;
       Param.RegAdd = RegAdd;
