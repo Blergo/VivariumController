@@ -337,8 +337,8 @@ void setup() {
   EEPROM.get(18, yCalC);
   EEPROM.get(24, WiFiState);
   EEPROM.get(25, NTPState);
-  EEPROM.get(26,ssid);
-  EEPROM.get(58,password);
+  EEPROM.get(26, ssid);
+  EEPROM.get(58, password);
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
