@@ -11,6 +11,7 @@ EEPROM addresses are in use as follows.<br />
 25, NTPState<br />
 26 - 57, ssid<br />
 58 - 90, password<br />
+91, Number of used Slave ID's<br />
 <br />
 <br />
 <h3>Modbus</h3>
