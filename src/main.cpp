@@ -21,7 +21,7 @@
 #define MODBUS_TX 25
 #define MODBUS_RX 26
 
-uint16_t scandata[8];
+uint16_t scandata[2];
 uint16_t resdata[8];
 uint8_t u8state;
 Modbus master(0,Serial1,0);
@@ -623,7 +623,7 @@ void MainWork(void * Parameters9){
       SlaveID = 1;
       Function = 3;
       RegAdd = 0;
-      RegNo = 8;
+      RegNo = 2;
       Param.SlaveID = SlaveID;
       Param.Function = Function;
       Param.RegAdd = RegAdd;
