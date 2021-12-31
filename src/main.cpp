@@ -629,6 +629,7 @@ void MainWork(void * Parameters9){
       Param.RegNo = RegNo;
       Param.ResVar = scandata;
       xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+      vTaskDelay(10);
       scanwait = millis() + scandelay;
     }
     if (modbusrun == 0 && millis() > reswait){
@@ -642,6 +643,7 @@ void MainWork(void * Parameters9){
       Param.RegNo = RegNo;
       Param.ResVar = resdata;
       xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+      vTaskDelay(10);
       reswait = millis() + resdelay;
     }
   }
@@ -679,10 +681,10 @@ void ModbusWorker(void * parameters8){
       break;
     }
   }
-  vTaskDelay(30);
+  vTaskDelay(10);
   vTaskDelete(NULL);
 }
 
-void loop() {
-  delay(200);
+void loop(){
+
 }
