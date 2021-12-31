@@ -22,6 +22,7 @@
 #define MODBUS_RX 26
 
 uint16_t scandata[2];
+uint16_t senddata[1];
 uint16_t resdata[8];
 uint8_t u8state;
 Modbus master(0,Serial1,0);
@@ -341,10 +342,32 @@ static void ta_event_cb(lv_event_t * e)
 
 static void event_cb_mbox(lv_event_t * e)
 {
-    lv_obj_t * obj = lv_event_get_current_target(e);
-    Serial.println(lv_msgbox_get_active_btn_text(obj));
-    lv_msgbox_close(NewSlaveDetect);
-   
+  lv_obj_t * obj = lv_event_get_current_target(e);
+  Serial.println(lv_msgbox_get_active_btn_text(obj));
+  lv_msgbox_close(NewSlaveDetect);
+  bool SlaveSet = 1;
+  while (SlaveSet == 1){
+    if (modbusrun == 0){
+      senddata[0] = ++CurSlaves;
+      SlaveID = 1;
+      Function = 6;
+      RegAdd = 0;
+      RegNo = 1;
+      Param.SlaveID = SlaveID;
+      Param.Function = Function;
+      Param.RegAdd = RegAdd;
+      Param.RegNo = RegNo;
+      Param.ResVar = senddata+0;
+      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+      vTaskDelay(10);
+      EEPROM.put(91, CurSlaves);
+      EEPROM.commit();
+      int testslave;
+      scandata[0] = 0;
+      SlaveSet = 0;
+    }
+  vTaskDelay(10);
+  }
 }
 
 
@@ -360,9 +383,7 @@ void setup() {
   ledcAttachPin(blPin, blChannel);
   blTimeout = millis()+blDuration;
 
-  int CurSlavesNew;
-
-  EEPROM.begin(91);
+  EEPROM.begin(95);
   EEPROM.get(0, xCalM);
   EEPROM.get(6, yCalM);
   EEPROM.get(11, xCalC);
@@ -371,11 +392,7 @@ void setup() {
   EEPROM.get(25, NTPState);
   EEPROM.get(26, ssid);
   EEPROM.get(58, password);
-  EEPROM.get(91, CurSlavesNew);
-
-  if(CurSlavesNew !=0){
-    CurSlaves = CurSlavesNew;
-  }
+  EEPROM.get(91, CurSlaves);
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
@@ -661,7 +678,7 @@ void MainWork(void * Parameters9){
       SlaveConf = 1;
     }
     if (modbusrun == 0 && millis() > reswait){
-      SlaveID = 1;
+      SlaveID = CurSlaves;
       Function = 3;
       RegAdd = 0;
       RegNo = 8;
