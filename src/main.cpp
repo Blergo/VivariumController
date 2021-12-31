@@ -97,23 +97,23 @@ lv_obj_t * WiFisw;
 lv_obj_t * WiFilabel;
 lv_obj_t * WiFiSetBtn;
 lv_obj_t * WiFiSetLabel;
-lv_obj_t * WiFiSetBkBtn;
-lv_obj_t * WiFiSetBkLabel;
-lv_obj_t * WiFiCnctBtn;
-lv_obj_t * WiFiCnctLabel;
 lv_obj_t * NTPsw;
 lv_obj_t * NTPlabel;
 lv_obj_t * CalBtn;
 lv_obj_t * CalLabel;
 lv_obj_t * SaveBtn;
 lv_obj_t * SaveLabel;
+
 lv_obj_t * WiFiSSID;
 lv_obj_t * WiFiSSIDLabel;
 lv_obj_t * WiFiPass;
 lv_obj_t * WiFiPassLabel;
 lv_obj_t * WiFiConnected;
 lv_obj_t * WiFiFailed;
-
+lv_obj_t * WiFiSetBkBtn;
+lv_obj_t * WiFiSetBkLabel;
+lv_obj_t * WiFiCnctBtn;
+lv_obj_t * WiFiCnctLabel;
 lv_obj_t * TempLabel;
 lv_obj_t * HumLabel;
 
@@ -650,7 +650,9 @@ void MainWork(void * Parameters9){
       xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
       vTaskDelay(10);
       scanwait = millis() + scandelay;
-      SlaveConf = 1;
+      if (scandata[0] == 1){
+        SlaveConf = 1;
+      }
     }
     if (modbusrun == 0 && millis() > reswait){
       SlaveID = 1;
