@@ -541,7 +541,7 @@ void disWiFi(void * parameters6) {
 
 void TFTUpdate(void * parameters5) {
   TickType_t xLastWakeTime1;
-  const portTickType xFrequency1 = 50 / portTICK_RATE_MS;
+  const portTickType xFrequency1 = 60 / portTICK_RATE_MS;
   xLastWakeTime1 = xTaskGetTickCount ();
   for(;;) {
     vTaskDelayUntil( &xLastWakeTime1, xFrequency1 );
