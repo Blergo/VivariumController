@@ -76,9 +76,11 @@ int blTimeout = 0;
 
 bool WiFiState;
 bool NTPState;
+bool SlaveConf;
 
 uint8_t WiFiStatus;
 
+TaskHandle_t Taskhandle_1;
 TaskHandle_t TaskHandle_2;
 TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
@@ -127,6 +129,7 @@ struct tm timeinfo;
 
 union Pun {float f; uint32_t u;};
 
+void ConfigureSlave(void * parameters1);
 void initWiFi(void * parameters2);
 void CheckRTC(void * parameters4);
 void TFTUpdate(void * parameters5);
@@ -335,6 +338,15 @@ static void ta_event_cb(lv_event_t * e)
     }
 }
 
+static void event_cb_mbox(lv_event_t * e)
+{
+    lv_obj_t * obj = lv_event_get_current_target(e);
+    Serial.println(lv_msgbox_get_active_btn_text(obj));
+    lv_msgbox_close(NewSlaveDetect);
+   
+}
+
+
 void setup() {
   Serial.begin(9600);
   Serial1.begin(9600, SERIAL_8N1, MODBUS_RX, MODBUS_TX);
@@ -508,7 +520,6 @@ void setup() {
   xTaskCreate(MainWork, "Main Worker", 2000, NULL, 4, &TaskHandle_9);
 }
 
-
 void initWiFi(void * parameters2) {
   if (WiFi.status() == WL_CONNECTED){
     xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, &TaskHandle_6);
@@ -536,6 +547,14 @@ void disWiFi(void * parameters6) {
   }
   WiFi.mode(WIFI_OFF);
   Serial.println("WiFi Disconnected!");
+  vTaskDelete(NULL);
+}
+
+void ConfigureSlave(void * parameters_1){
+  static const char * btns[] ={"Configure", ""};
+  NewSlaveDetect = lv_msgbox_create(lv_scr_act(), NULL, "A new slave has been detected!", btns, false);
+  lv_obj_add_event_cb(NewSlaveDetect, event_cb_mbox, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_center(NewSlaveDetect);
   vTaskDelete(NULL);
 }
 
@@ -567,10 +586,9 @@ void TFTUpdate(void * parameters5) {
       curDuty = setDuty;
     }
     
-    if (scandata[0] == 2){
-      NewSlaveDetect = lv_msgbox_create(NULL, NULL, "A new slave has been detected!", NULL, true);
-      lv_obj_center(NewSlaveDetect);
-      scandata[0] = 0;
+    if (SlaveConf == 1){
+      xTaskCreate(ConfigureSlave, "Configure Slave", 1500, NULL, 2, &Taskhandle_1);
+      SlaveConf = 0;
     }
 
     lv_label_set_text_fmt(TempLabel, "Temperature: %.2f", decodeFloat(&resdata[4]));
@@ -619,7 +637,7 @@ void MainWork(void * Parameters9){
   reswait = millis() + resdelay;
   for(;;){
     vTaskDelay(10);
-    if (modbusrun == 0 && millis() > scanwait){
+    if (modbusrun == 0 && scandata[0] == 0 && millis() > scanwait){
       SlaveID = 1;
       Function = 3;
       RegAdd = 0;
@@ -632,6 +650,7 @@ void MainWork(void * Parameters9){
       xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
       vTaskDelay(10);
       scanwait = millis() + scandelay;
+      SlaveConf = 1;
     }
     if (modbusrun == 0 && millis() > reswait){
       SlaveID = 1;
