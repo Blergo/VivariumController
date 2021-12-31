@@ -99,6 +99,8 @@ lv_obj_t * WiFisw;
 lv_obj_t * WiFilabel;
 lv_obj_t * WiFiSetBtn;
 lv_obj_t * WiFiSetLabel;
+lv_obj_t * SlaveSetBtn;
+lv_obj_t * SlaveSetLabel;
 lv_obj_t * NTPsw;
 lv_obj_t * NTPlabel;
 lv_obj_t * CalBtn;
@@ -116,6 +118,10 @@ lv_obj_t * WiFiSetBkBtn;
 lv_obj_t * WiFiSetBkLabel;
 lv_obj_t * WiFiCnctBtn;
 lv_obj_t * WiFiCnctLabel;
+
+lv_obj_t * SlaveSetBkBtn;
+lv_obj_t * SlaveSetBkLabel;
+
 lv_obj_t * TempLabel;
 lv_obj_t * HumLabel;
 
@@ -251,6 +257,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
@@ -258,6 +265,28 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(WiFiPass, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiPassLabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
+    }
+    else if(code == LV_EVENT_CLICKED && obj == SlaveSetBtn){
+      lv_obj_add_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+    }
+    else if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
+      lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBkBtn){
       lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
@@ -267,6 +296,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
@@ -362,14 +392,12 @@ static void event_cb_mbox(lv_event_t * e)
       vTaskDelay(10);
       EEPROM.put(91, CurSlaves);
       EEPROM.commit();
-      int testslave;
       scandata[0] = 0;
       SlaveSet = 0;
     }
   vTaskDelay(10);
   }
 }
-
 
 void setup() {
   Serial.begin(9600);
@@ -428,6 +456,14 @@ void setup() {
   WiFiSetLabel = lv_label_create(WiFiSetBtn);
   lv_label_set_text(WiFiSetLabel, "WiFi Settings");
   lv_obj_center(WiFiSetLabel);
+
+  SlaveSetBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(SlaveSetBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align_to(SlaveSetBtn, WiFiSetBtn, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
+
+  SlaveSetLabel = lv_label_create(SlaveSetBtn);
+  lv_label_set_text(SlaveSetLabel, "Slave Settings");
+  lv_obj_center(SlaveSetLabel);
 
   NTPsw = lv_switch_create(tab2);
   lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
@@ -511,6 +547,15 @@ void setup() {
   WiFiFailed = lv_msgbox_create(tab2, NULL, "Connection Failed!", NULL, true);
   lv_obj_center(WiFiFailed);
   lv_obj_add_flag(WiFiFailed, LV_OBJ_FLAG_HIDDEN);
+
+  SlaveSetBkBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(SlaveSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align(SlaveSetBkBtn, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  lv_obj_add_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+
+  SlaveSetBkLabel = lv_label_create(SlaveSetBkBtn);
+  lv_label_set_text(SlaveSetBkLabel, "Back");
+  lv_obj_center(SlaveSetBkLabel);
 
   TempLabel = lv_label_create(tab1);
   lv_obj_align(TempLabel, LV_ALIGN_TOP_LEFT, 0, 20);
