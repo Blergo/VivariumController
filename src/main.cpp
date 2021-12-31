@@ -586,7 +586,7 @@ void TFTUpdate(void * parameters5) {
       curDuty = setDuty;
     }
     
-    if (SlaveConf == 1){
+    if (SlaveConf == 1 && scandata[0] == 1){
       xTaskCreate(ConfigureSlave, "Configure Slave", 1500, NULL, 2, &Taskhandle_1);
       SlaveConf = 0;
     }
@@ -650,9 +650,7 @@ void MainWork(void * Parameters9){
       xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
       vTaskDelay(10);
       scanwait = millis() + scandelay;
-      if (scandata[0] == 1){
-        SlaveConf = 1;
-      }
+      SlaveConf = 1;
     }
     if (modbusrun == 0 && millis() > reswait){
       SlaveID = 1;
