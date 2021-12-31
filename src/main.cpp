@@ -618,6 +618,7 @@ void MainWork(void * Parameters9){
   scanwait = millis() + scandelay;
   reswait = millis() + resdelay;
   for(;;){
+    vTaskDelay(10);
     if (modbusrun == 0 && millis() > scanwait){
       SlaveID = 1;
       Function = 3;
@@ -686,5 +687,5 @@ void ModbusWorker(void * parameters8){
 }
 
 void loop(){
-
+  vTaskDelay(10);
 }
