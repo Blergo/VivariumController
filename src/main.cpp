@@ -32,6 +32,7 @@ unsigned long scandelay = 5000;
 unsigned long reswait;
 unsigned long resdelay = 1000;
 bool modbusrun;
+int CurSlaves = 1;
 
 int SlaveID = 0;
 int Function;
@@ -359,7 +360,9 @@ void setup() {
   ledcAttachPin(blPin, blChannel);
   blTimeout = millis()+blDuration;
 
-  EEPROM.begin(90);
+  int CurSlavesNew;
+
+  EEPROM.begin(91);
   EEPROM.get(0, xCalM);
   EEPROM.get(6, yCalM);
   EEPROM.get(11, xCalC);
@@ -368,6 +371,11 @@ void setup() {
   EEPROM.get(25, NTPState);
   EEPROM.get(26, ssid);
   EEPROM.get(58, password);
+  EEPROM.get(91, CurSlavesNew);
+
+  if(CurSlavesNew !=0){
+    CurSlaves = CurSlavesNew;
+  }
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
