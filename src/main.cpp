@@ -21,23 +21,30 @@
 #define MODBUS_TX 25
 #define MODBUS_RX 26
 
-uint16_t au16data[6];
+uint16_t scandata[8];
+uint16_t resdata[8];
 uint8_t u8state;
 Modbus master(0,Serial1,0);
 modbus_t telegram;
 unsigned long u32wait;
+unsigned long scanwait;
+unsigned long scandelay = 5000;
+unsigned long reswait;
+unsigned long resdelay = 1000;
 bool modbusrun;
 
-int SlaveID;
+int SlaveID = 0;
 int Function;
 int RegAdd;
 int RegNo;
+uint16_t *ResVar;
 
 typedef struct {
 	int SlaveID;
   int Function;
   int RegAdd;
   int RegNo;
+  uint16_t *ResVar;
 } ModbusParam;
 
 ModbusParam Param;
@@ -108,6 +115,7 @@ lv_obj_t * WiFiFailed;
 lv_obj_t * TempLabel;
 lv_obj_t * HumLabel;
 
+lv_obj_t * NewSlaveDetect;
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
@@ -500,6 +508,7 @@ void setup() {
   xTaskCreate(MainWork, "Main Worker", 2000, NULL, 4, &TaskHandle_9);
 }
 
+
 void initWiFi(void * parameters2) {
   if (WiFi.status() == WL_CONNECTED){
     xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, &TaskHandle_6);
@@ -557,11 +566,15 @@ void TFTUpdate(void * parameters5) {
       ledcWrite(blChannel, setDuty);
       curDuty = setDuty;
     }
+    
+    if (scandata[0] == 2){
+      NewSlaveDetect = lv_msgbox_create(NULL, NULL, "A new slave has been detected!", NULL, true);
+      lv_obj_center(NewSlaveDetect);
+      scandata[0] = 0;
+    }
 
-    delay(500);
-
-    lv_label_set_text_fmt(TempLabel, "Temperature: %.2f", decodeFloat(&au16data[4]));
-    lv_label_set_text_fmt(HumLabel, "Humidity: %.2f", decodeFloat(&au16data[6]));
+    lv_label_set_text_fmt(TempLabel, "Temperature: %.2f", decodeFloat(&resdata[4]));
+    lv_label_set_text_fmt(HumLabel, "Humidity: %.2f", decodeFloat(&resdata[6]));
   }
 }
 
@@ -602,12 +615,10 @@ void SaveSettings(void * parameters7) {
 }
 
 void MainWork(void * Parameters9){
-  TickType_t xLastWakeTime;
-  const portTickType xFrequency = 1000 / portTICK_RATE_MS;
-  xLastWakeTime = xTaskGetTickCount ();
+  scanwait = millis() + scandelay;
+  reswait = millis() + resdelay;
   for(;;){
-    vTaskDelayUntil( &xLastWakeTime, xFrequency );
-    if (modbusrun == 0){
+    if (modbusrun == 0 && millis() > scanwait){
       SlaveID = 1;
       Function = 3;
       RegAdd = 0;
@@ -616,18 +627,33 @@ void MainWork(void * Parameters9){
       Param.Function = Function;
       Param.RegAdd = RegAdd;
       Param.RegNo = RegNo;
+      Param.ResVar = scandata;
       xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+      scanwait = millis() + scandelay;
+    }
+    if (modbusrun == 0 && millis() > reswait){
+      SlaveID = 1;
+      Function = 3;
+      RegAdd = 0;
+      RegNo = 8;
+      Param.SlaveID = SlaveID;
+      Param.Function = Function;
+      Param.RegAdd = RegAdd;
+      Param.RegNo = RegNo;
+      Param.ResVar = resdata;
+      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+      reswait = millis() + resdelay;
     }
   }
 }
 
 void ModbusWorker(void * parameters8){
+  modbusrun = 1;
   ModbusParam modbus_config = *(ModbusParam *) parameters8;
   master.start();
   master.setTimeOut( 2000 );
   u32wait = millis() + 500;
   u8state = 0;
-  modbusrun = 1;
 
   while(modbusrun == 1){
     switch( u8state ) {
@@ -639,7 +665,7 @@ void ModbusWorker(void * parameters8){
         telegram.u8fct = modbus_config.Function;
         telegram.u16RegAdd = modbus_config.RegAdd;
         telegram.u16CoilsNo = modbus_config.RegNo;
-        telegram.au16reg = au16data;
+        telegram.au16reg = modbus_config.ResVar;
 
         master.query( telegram );
         u8state++;
@@ -653,8 +679,10 @@ void ModbusWorker(void * parameters8){
       break;
     }
   }
+  vTaskDelay(30);
   vTaskDelete(NULL);
 }
 
 void loop() {
+  delay(200);
 }
