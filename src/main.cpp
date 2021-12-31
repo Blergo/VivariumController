@@ -119,6 +119,7 @@ lv_obj_t * WiFiSetBkLabel;
 lv_obj_t * WiFiCnctBtn;
 lv_obj_t * WiFiCnctLabel;
 
+lv_obj_t * SlaveSelect;
 lv_obj_t * SlaveSetBkBtn;
 lv_obj_t * SlaveSetBkLabel;
 
@@ -276,6 +277,19 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
+
+      int count;
+      String slavestr;
+      for(count = 2;count <= CurSlaves;count++) {
+        if (count != CurSlaves){
+          slavestr = String(slavestr + count + "\n");
+        }
+        else if (count == CurSlaves){
+          slavestr = String(slavestr + count);
+        }
+      }
+      lv_dropdown_set_options(SlaveSelect, slavestr.c_str());
     }
     else if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
       lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
@@ -287,6 +301,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBkBtn){
       lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
@@ -536,7 +551,7 @@ void setup() {
   lv_obj_center(WiFiSetBkLabel);
 
   keyboard = lv_keyboard_create(tab2);
-  lv_obj_set_size(keyboard, LV_HOR_RES, LV_VER_RES / 3.4);
+  lv_obj_set_size(keyboard, LV_HOR_RES, LV_VER_RES / 3.3);
   lv_keyboard_set_textarea(keyboard, WiFiSSID);
   lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
 
@@ -548,9 +563,14 @@ void setup() {
   lv_obj_center(WiFiFailed);
   lv_obj_add_flag(WiFiFailed, LV_OBJ_FLAG_HIDDEN);
 
+  SlaveSelect = lv_dropdown_create(tab2);
+  lv_obj_align(SlaveSelect, LV_ALIGN_TOP_LEFT, 10, 10);
+  lv_obj_add_event_cb(SlaveSelect, NULL, LV_EVENT_ALL, NULL);
+  lv_obj_add_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
+
   SlaveSetBkBtn = lv_btn_create(tab2);
   lv_obj_add_event_cb(SlaveSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-  lv_obj_align(SlaveSetBkBtn, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  lv_obj_align(SlaveSetBkBtn, LV_ALIGN_BOTTOM_LEFT, 10, -10);
   lv_obj_add_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
 
   SlaveSetBkLabel = lv_label_create(SlaveSetBkBtn);
