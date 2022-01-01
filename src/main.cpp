@@ -30,7 +30,7 @@ Modbus master(0,Serial1,0);
 modbus_t telegram;
 unsigned long u32wait;
 unsigned long scanwait;
-unsigned long scandelay = 5000;
+unsigned long scandelay = 1000;
 unsigned long reswait;
 unsigned long resdelay = 1000;
 bool modbusrun;
@@ -92,6 +92,7 @@ TaskHandle_t TaskHandle_6;
 TaskHandle_t TaskHandle_7;
 TaskHandle_t TaskHandle_8;
 TaskHandle_t TaskHandle_9;
+TaskHandle_t TaskHandle_10;
 
 lv_obj_t * keyboard;
 lv_obj_t * tabview;
@@ -126,6 +127,8 @@ lv_obj_t * WiFiCnctLabel;
 lv_obj_t * SlaveSelect;
 lv_obj_t * SlaveSetBkBtn;
 lv_obj_t * SlaveSetBkLabel;
+lv_obj_t * SlaveScanBtn;
+lv_obj_t * SlaveScanLabel;
 
 lv_obj_t * SysSetBkBtn;
 lv_obj_t * SysSetBkLabel;
@@ -154,6 +157,7 @@ void disWiFi(void * parameters6);
 void SaveSettings(void * parameters7);
 void ModbusWorker(void * parameters8);
 void MainWork(void * Parameters9);
+void PairSlave(void * Parameters10);
 
 class ScreenPoint {
 
@@ -293,9 +297,13 @@ static void event_handler_btn(lv_event_t * e){
     }
     else if(code == LV_EVENT_CLICKED && obj == SlaveSetBtn){
       MsgBox = lv_msgbox_create(NULL, NULL, "Loading!", NULL, false);
-      lv_obj_add_event_cb(MsgBox, NULL, LV_EVENT_VALUE_CHANGED, NULL);
       lv_obj_center(MsgBox);
       xTaskCreate(UpdateSlct, "Update Slave Select", 2500, NULL, 5, &TaskHandle_3);
+    }
+    else if(code == LV_EVENT_CLICKED && obj == SlaveScanBtn){
+      MsgBox = lv_msgbox_create(NULL, NULL, "Scanning!", NULL, false);
+      lv_obj_center(MsgBox);
+      xTaskCreate(PairSlave, "Pair New Slave", 2500, NULL, 5, &TaskHandle_10);
     }
     if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
       lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
@@ -305,6 +313,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SlaveScanBtn, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBkBtn){
       lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
@@ -625,6 +634,15 @@ void setup() {
   lv_label_set_text(SlaveSetBkLabel, "Back");
   lv_obj_center(SlaveSetBkLabel);
 
+  SlaveScanBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(SlaveScanBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align(SlaveScanBtn, LV_ALIGN_BOTTOM_MID, 0, -10);
+  lv_obj_add_flag(SlaveScanBtn, LV_OBJ_FLAG_HIDDEN);
+
+  SlaveScanLabel = lv_label_create(SlaveScanBtn);
+  lv_label_set_text(SlaveScanLabel, "Pair Slave");
+  lv_obj_center(SlaveScanLabel);
+
   TempLabel = lv_label_create(tab1);
   lv_obj_align(TempLabel, LV_ALIGN_TOP_LEFT, 0, 20);
     
@@ -689,6 +707,7 @@ void disWiFi(void * parameters6) {
 }
 
 void ConfigureSlave(void * parameters_1){
+  lv_msgbox_close(MsgBox);
   static const char * btns[] ={"Configure", ""};
   MsgBox = lv_msgbox_create(NULL, NULL, "A new slave has been detected!", btns, false);
   lv_obj_add_event_cb(MsgBox, event_cb_mbox, LV_EVENT_VALUE_CHANGED, NULL);
@@ -722,11 +741,6 @@ void TFTUpdate(void * parameters5) {
     if (setDuty != curDuty) {
       ledcWrite(blChannel, setDuty);
       curDuty = setDuty;
-    }
-    
-    if (SlaveConf == 1 && scandata[0] == 1){
-      xTaskCreate(ConfigureSlave, "Configure Slave", 1500, NULL, 2, &Taskhandle_1);
-      SlaveConf = 0;
     }
 
     lv_label_set_text_fmt(TempLabel, "Temperature: %.2f", decodeFloat(&resdata[4]));
@@ -822,6 +836,7 @@ void UpdateSlct(void * parameters3) {
   lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(SlaveScanBtn, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
   vTaskDelay(10);
   vTaskDelete(NULL);
@@ -841,12 +856,15 @@ void SaveSettings(void * parameters7) {
   vTaskDelete(NULL);
 }
 
-void MainWork(void * Parameters9){
+void PairSlave(void * Parameters10){
   scanwait = millis() + scandelay;
-  reswait = millis() + resdelay;
-  for(;;){
+  scandata[0] = 0;
+  SlaveConf = 1;
+  int count = 1;
+  vTaskDelay(10);
+  while(SlaveConf == 1){
     vTaskDelay(10);
-    if (modbusrun == 0 && scandata[0] == 0 && millis() > scanwait){
+    if (modbusrun == 0 && count <= 10 && scandata[0] == 0 && millis() > scanwait){
       SlaveID = 1;
       Function = 3;
       RegAdd = 0;
@@ -859,8 +877,26 @@ void MainWork(void * Parameters9){
       xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
       vTaskDelay(10);
       scanwait = millis() + scandelay;
-      SlaveConf = 1;
+      count++;
     }
+    if (scandata[0] == 1){
+      xTaskCreate(ConfigureSlave, "Configure Slave", 1500, NULL, 2, &Taskhandle_1);
+      SlaveConf = 0;
+    }
+    if (count == 11){
+      lv_msgbox_close(MsgBox);
+      MsgBox = lv_msgbox_create(NULL, NULL, "Failed to find new slave!", NULL, true);
+      lv_obj_center(MsgBox);
+      SlaveConf = 0;
+    }
+  }
+  vTaskDelete(NULL);
+}
+
+void MainWork(void * Parameters9){
+  reswait = millis() + resdelay;
+  for(;;){
+    vTaskDelay(10);
     if (modbusrun == 0 && millis() > reswait){
       SlaveID = CurSlaves;
       Function = 3;
