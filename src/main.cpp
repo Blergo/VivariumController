@@ -23,6 +23,7 @@
 
 uint16_t scandata[2];
 uint16_t senddata[1];
+uint16_t scandata1[2];
 uint16_t resdata[8];
 uint8_t u8state;
 Modbus master(0,Serial1,0);
@@ -84,6 +85,7 @@ uint8_t WiFiStatus;
 
 TaskHandle_t Taskhandle_1;
 TaskHandle_t TaskHandle_2;
+TaskHandle_t TaskHandle_3;
 TaskHandle_t TaskHandle_4;
 TaskHandle_t TaskHandle_5;
 TaskHandle_t TaskHandle_6;
@@ -140,6 +142,7 @@ union Pun {float f; uint32_t u;};
 
 void ConfigureSlave(void * parameters1);
 void initWiFi(void * parameters2);
+void UpdateSlct (void * parameters3);
 void CheckRTC(void * parameters4);
 void TFTUpdate(void * parameters5);
 void disWiFi(void * parameters6);
@@ -268,30 +271,9 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == SlaveSetBtn){
-      lv_obj_add_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
-
-      int count;
-      String slavestr;
-      for(count = 2;count <= CurSlaves;count++) {
-        if (count != CurSlaves){
-          slavestr = String(slavestr + count + "\n");
-        }
-        else if (count == CurSlaves){
-          slavestr = String(slavestr + count);
-        }
-      }
-      lv_dropdown_set_options(SlaveSelect, slavestr.c_str());
+      xTaskCreate(UpdateSlct, "Update Slave Select", 2500, NULL, 5, &TaskHandle_3);
     }
-    else if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
+    if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
       lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
@@ -341,7 +323,7 @@ static void event_handler_btn(lv_event_t * e){
         break;
       }
       WiFiStatus = 0;
-    }
+    } 
 }
 
 static void event_handler_sw(lv_event_t * e){
@@ -435,6 +417,8 @@ void setup() {
   EEPROM.get(25, NTPState);
   EEPROM.get(26, ssid);
   EEPROM.get(58, password);
+  //EEPROM.put(91, 1);
+  //EEPROM.commit();
   EEPROM.get(91, CurSlaves);
 
   lv_init();
@@ -650,7 +634,7 @@ void ConfigureSlave(void * parameters_1){
 
 void TFTUpdate(void * parameters5) {
   TickType_t xLastWakeTime1;
-  const portTickType xFrequency1 = 60 / portTICK_RATE_MS;
+  const portTickType xFrequency1 = 100 / portTICK_RATE_MS;
   xLastWakeTime1 = xTaskGetTickCount ();
   for(;;) {
     vTaskDelayUntil( &xLastWakeTime1, xFrequency1 );
@@ -706,6 +690,74 @@ void CheckRTC(void * parameters4) {
       rtc.adjust(DateTime(timeinfo.tm_year+1900, timeinfo.tm_mon+1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
     }
   }
+}
+
+void UpdateSlct(void * parameters3) {
+  int count;
+  String slavestr;
+  for(count = 2;count <= CurSlaves;count++) {
+    if (count != CurSlaves){
+      bool Slavescan = 1;
+      while (Slavescan == 1){
+        vTaskDelay(10);
+        if (modbusrun == 0){
+          SlaveID = count;
+          Function = 3;
+          RegAdd = 0;
+          RegNo = 2;
+          Param.SlaveID = SlaveID;
+          Param.Function = Function;
+          Param.RegAdd = RegAdd;
+          Param.RegNo = RegNo;
+          Param.ResVar = scandata1;
+          xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+          Slavescan = 0;
+        }
+      }
+      vTaskDelay(20);
+      while (modbusrun == 1){
+        vTaskDelay(20);
+      }
+      slavestr = String(slavestr + count + " - " + scandata1[1] + "\n");
+    }
+    if (count == CurSlaves){
+      bool Slavescan = 1;
+      while (Slavescan == 1){
+        vTaskDelay(10);
+        if (modbusrun == 0){
+          SlaveID = count;
+          Function = 3;
+          RegAdd = 0;
+          RegNo = 2;
+          Param.SlaveID = SlaveID;
+          Param.Function = Function;
+          Param.RegAdd = RegAdd;
+          Param.RegNo = RegNo;
+          Param.ResVar = scandata1;
+          xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+          Slavescan = 0;
+        }
+      }
+      vTaskDelay(20);
+      while (modbusrun == 1){
+        vTaskDelay(10);
+      }
+      slavestr = String(slavestr + count + " - " + scandata1[1]);
+    }
+  }
+  lv_dropdown_set_options(SlaveSelect, slavestr.c_str());
+  lv_obj_add_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
+  vTaskDelay(10);
+  vTaskDelete(NULL);
 }
 
 void SaveSettings(void * parameters7) {
@@ -791,7 +843,6 @@ void ModbusWorker(void * parameters8){
       break;
     }
   }
-  vTaskDelay(10);
   vTaskDelete(NULL);
 }
 
