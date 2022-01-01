@@ -192,7 +192,7 @@ String decodeAbility(String AbilityCode){
     return a;
   }
   else if(AbilityCode == "6"){
-    String a = "1 x Temperature Sensor";
+    String a = "1 x DHT22 Sensor";
     return a;
   }
   else if(AbilityCode == "82"){
@@ -806,7 +806,7 @@ void UpdateSlct(void * parameters3) {
       while (modbusrun == 1){
         vTaskDelay(10);
       }
-      slavestr = String(slavestr + count + " - " + decodeAbility(String(scandata1[1])));
+      slavestr = String(slavestr + "ID: " + count + " - " + decodeAbility(String(scandata1[1])));
     }
   }
   lv_dropdown_set_options(SlaveSelect, slavestr.c_str());
