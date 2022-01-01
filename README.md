@@ -28,12 +28,11 @@ The slaves all start off with this register set to 1 and an ID of 1. When the co
 Implemented on slaves as below and read by master when a new slave is detected (currently disabled, see above) Master does not do anything with this currently.<br />
 <br />
 00 = Not Detected<br />
-01 - 05 =  1 to 5 Qty DS18B20 Temperature sensors<br />
-06 - 0A =  1 to 5 Qty DHT22 Temperatre & Hummidity sensors<br />
-0B - 80 =  Unassigned<br />
-81 - 85 =  1 to 5 Qty 10A 250VAC relays<br />
-86 - 90 =  1 to 5 Qty 10A 250VAC relays with current reading<br />
-91 - FF =  Unassigned<br />
+01 - 05 =  Unassigned<br />
+06 =  1 Qty DHT22 Temperatre & Hummidity sensor<br />
+07 - 81 =  Unassigned<br />
+82 =  2 Qty 10A 250VAC relays<br />
+83 - FF =  Unassigned<br />
 <br />
 <br />
 <br />
