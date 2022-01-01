@@ -127,6 +127,9 @@ lv_obj_t * SlaveSelect;
 lv_obj_t * SlaveSetBkBtn;
 lv_obj_t * SlaveSetBkLabel;
 
+lv_obj_t * SysSetBkBtn;
+lv_obj_t * SysSetBkLabel;
+
 lv_obj_t * TempLabel;
 lv_obj_t * HumLabel;
 
@@ -256,14 +259,11 @@ static void event_handler_btn(lv_event_t * e){
       xTaskCreate(SaveSettings, "Save Settings", 2000, NULL, 2, &TaskHandle_7);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBtn){
-      lv_obj_add_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
@@ -279,26 +279,20 @@ static void event_handler_btn(lv_event_t * e){
       xTaskCreate(UpdateSlct, "Update Slave Select", 2500, NULL, 5, &TaskHandle_3);
     }
     if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
-      lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBkBtn){
-      lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBkBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiCnctBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSSID, LV_OBJ_FLAG_HIDDEN);
@@ -308,6 +302,30 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_add_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
       lv_textarea_set_placeholder_text(WiFiSSID, ssid);
       lv_textarea_set_placeholder_text(WiFiPass, password);
+    }
+    else if(code == LV_EVENT_CLICKED && obj == SysSetBkBtn){
+      lv_obj_add_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SysSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+    }
+    else if(code == LV_EVENT_CLICKED && obj == SysSetBtn){
+      lv_obj_clear_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(SysSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiCnctBtn){
       strcpy(ssid, lv_textarea_get_text(WiFiSSID));
@@ -448,10 +466,12 @@ void setup() {
   WiFisw = lv_switch_create(tab2);
   lv_obj_add_event_cb(WiFisw, event_handler_sw, LV_EVENT_ALL, NULL);
   lv_obj_align(WiFisw, LV_ALIGN_TOP_LEFT, 10, 0);
+  lv_obj_add_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
 
   WiFilabel = lv_label_create(tab2);
   lv_label_set_text(WiFilabel, "WiFi");
   lv_obj_align_to(WiFilabel, WiFisw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
+  lv_obj_add_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
 
   WiFiSetBtn = lv_btn_create(tab2);
   lv_obj_add_event_cb(WiFiSetBtn, event_handler_btn, LV_EVENT_ALL, NULL);
@@ -472,14 +492,33 @@ void setup() {
   NTPsw = lv_switch_create(tab2);
   lv_obj_align_to(NTPsw, WiFisw, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
   lv_obj_add_event_cb(NTPsw, event_handler_sw, LV_EVENT_ALL, NULL);
+  lv_obj_add_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
 
   NTPlabel = lv_label_create(tab2);
   lv_label_set_text(NTPlabel, "NTP");
   lv_obj_align_to(NTPlabel, NTPsw, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
+  lv_obj_add_flag(NTPlabel, LV_OBJ_FLAG_HIDDEN);
+
+  SysSetBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(SysSetBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align(SysSetBtn, LV_ALIGN_TOP_LEFT, 10, 0);
+
+  SysSetLabel = lv_label_create(SysSetBtn);
+  lv_label_set_text(SysSetLabel, "System Settings");
+  lv_obj_center(SysSetLabel);
+
+  SysSetBkBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(SysSetBkBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align(SysSetBkBtn, LV_ALIGN_BOTTOM_LEFT, 10, -10);
+  lv_obj_add_flag(SysSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+
+  SysSetBkLabel = lv_label_create(SysSetBkBtn);
+  lv_label_set_text(SysSetBkLabel, "Back");
+  lv_obj_center(SysSetBkLabel);
 
   CalBtn = lv_btn_create(tab2);
   lv_obj_add_event_cb(CalBtn, event_handler_btn, LV_EVENT_ALL, NULL);
-  lv_obj_align(CalBtn, LV_ALIGN_BOTTOM_LEFT, 10, -10);
+  lv_obj_align_to(CalBtn, SysSetBtn, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 20);
 
   CalLabel = lv_label_create(CalBtn);
   lv_label_set_text(CalLabel, "Calibrate Touch");
@@ -760,6 +799,7 @@ void UpdateSlct(void * parameters3) {
   lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_flag(SlaveSetBkBtn, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
   vTaskDelay(10);
