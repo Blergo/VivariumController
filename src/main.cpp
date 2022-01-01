@@ -105,6 +105,8 @@ lv_obj_t * SlaveSetBtn;
 lv_obj_t * SlaveSetLabel;
 lv_obj_t * NTPsw;
 lv_obj_t * NTPlabel;
+lv_obj_t * SysSetBtn;
+lv_obj_t * SysSetLabel;
 lv_obj_t * CalBtn;
 lv_obj_t * CalLabel;
 lv_obj_t * SaveBtn;
@@ -128,7 +130,7 @@ lv_obj_t * SlaveSetBkLabel;
 lv_obj_t * TempLabel;
 lv_obj_t * HumLabel;
 
-lv_obj_t * NewSlaveDetect;
+lv_obj_t * MsgBox;
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
@@ -271,6 +273,9 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_clear_flag(keyboard, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == SlaveSetBtn){
+      MsgBox = lv_msgbox_create(NULL, NULL, "Loading!", NULL, false);
+      lv_obj_add_event_cb(MsgBox, NULL, LV_EVENT_VALUE_CHANGED, NULL);
+      lv_obj_center(MsgBox);
       xTaskCreate(UpdateSlct, "Update Slave Select", 2500, NULL, 5, &TaskHandle_3);
     }
     if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
@@ -371,7 +376,7 @@ static void event_cb_mbox(lv_event_t * e)
 {
   lv_obj_t * obj = lv_event_get_current_target(e);
   Serial.println(lv_msgbox_get_active_btn_text(obj));
-  lv_msgbox_close(NewSlaveDetect);
+  lv_msgbox_close(MsgBox);
   bool SlaveSet = 1;
   while (SlaveSet == 1){
     if (modbusrun == 0){
@@ -626,9 +631,9 @@ void disWiFi(void * parameters6) {
 
 void ConfigureSlave(void * parameters_1){
   static const char * btns[] ={"Configure", ""};
-  NewSlaveDetect = lv_msgbox_create(lv_scr_act(), NULL, "A new slave has been detected!", btns, false);
-  lv_obj_add_event_cb(NewSlaveDetect, event_cb_mbox, LV_EVENT_VALUE_CHANGED, NULL);
-  lv_obj_center(NewSlaveDetect);
+  MsgBox = lv_msgbox_create(NULL, NULL, "A new slave has been detected!", btns, false);
+  lv_obj_add_event_cb(MsgBox, event_cb_mbox, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_center(MsgBox);
   vTaskDelete(NULL);
 }
 
@@ -746,6 +751,7 @@ void UpdateSlct(void * parameters3) {
     }
   }
   lv_dropdown_set_options(SlaveSelect, slavestr.c_str());
+  lv_msgbox_close(MsgBox);
   lv_obj_add_flag(WiFisw, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(WiFilabel, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(NTPsw, LV_OBJ_FLAG_HIDDEN);
