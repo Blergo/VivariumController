@@ -305,7 +305,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_center(MsgBox);
       xTaskCreate(PairSlave, "Pair New Slave", 2500, NULL, 5, &TaskHandle_10);
     }
-    if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
+    else if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
       lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
@@ -423,6 +423,7 @@ static void event_cb_mbox(lv_event_t * e)
   lv_obj_t * obj = lv_event_get_current_target(e);
   Serial.println(lv_msgbox_get_active_btn_text(obj));
   lv_msgbox_close(MsgBox);
+  String slavestr;
   bool SlaveSet = 1;
   while (SlaveSet == 1){
     if (modbusrun == 0){
@@ -430,7 +431,7 @@ static void event_cb_mbox(lv_event_t * e)
       SlaveID = 1;
       Function = 6;
       RegAdd = 0;
-      RegNo = 1;
+      RegNo = 2;
       Param.SlaveID = SlaveID;
       Param.Function = Function;
       Param.RegAdd = RegAdd;
@@ -440,6 +441,8 @@ static void event_cb_mbox(lv_event_t * e)
       vTaskDelay(10);
       EEPROM.put(91, CurSlaves);
       EEPROM.commit();
+      slavestr = String("ID: " + String(CurSlaves) + " - " + decodeAbility(String(scandata[1])));
+      lv_dropdown_add_option(SlaveSelect, slavestr.c_str(), LV_DROPDOWN_POS_LAST);
       scandata[0] = 0;
       SlaveSet = 0;
     }
