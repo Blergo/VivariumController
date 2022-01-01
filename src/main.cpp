@@ -760,6 +760,7 @@ void UpdateSlct(void * parameters3) {
   int count;
   String slavestr;
   for(count = 2;count <= CurSlaves;count++) {
+    scandata1[1] = 0;
     if (count != CurSlaves){
       bool Slavescan = 1;
       while (Slavescan == 1){
