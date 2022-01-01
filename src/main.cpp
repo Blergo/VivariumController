@@ -783,7 +783,7 @@ void UpdateSlct(void * parameters3) {
       while (modbusrun == 1){
         vTaskDelay(20);
       }
-      slavestr = String(slavestr + count + " - " + scandata1[1] + "\n");
+      slavestr = String(slavestr + "ID: " + count + " - " + decodeAbility(String(scandata1[1])) + "\n");
     }
     if (count == CurSlaves){
       bool Slavescan = 1;
