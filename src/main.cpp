@@ -186,6 +186,25 @@ float decodeFloat(uint16_t *regs)
     return pun.f;
 }
 
+String decodeAbility(String AbilityCode){
+  if(AbilityCode == "0"){
+    String a = "Not Detected";
+    return a;
+  }
+  else if(AbilityCode == "6"){
+    String a = "1 x Temperature Sensor";
+    return a;
+  }
+  else if(AbilityCode == "82"){
+    String a = "2 x Relay";
+    return a;
+  }
+  else{
+    String a = "Error - Not Defined!";
+    return a;
+  }
+}
+
 void calibrateTouchScreen(){
   TS_Point p;
   int16_t x1,y1,x2,y2;
@@ -592,6 +611,7 @@ void setup() {
   lv_obj_add_flag(WiFiFailed, LV_OBJ_FLAG_HIDDEN);
 
   SlaveSelect = lv_dropdown_create(tab2);
+  lv_obj_set_width(SlaveSelect, MY_DISP_HOR_RES-50); 
   lv_obj_align(SlaveSelect, LV_ALIGN_TOP_LEFT, 10, 10);
   lv_obj_add_event_cb(SlaveSelect, NULL, LV_EVENT_ALL, NULL);
   lv_obj_add_flag(SlaveSelect, LV_OBJ_FLAG_HIDDEN);
@@ -786,7 +806,7 @@ void UpdateSlct(void * parameters3) {
       while (modbusrun == 1){
         vTaskDelay(10);
       }
-      slavestr = String(slavestr + count + " - " + scandata1[1]);
+      slavestr = String(slavestr + count + " - " + decodeAbility(String(scandata1[1])));
     }
   }
   lv_dropdown_set_options(SlaveSelect, slavestr.c_str());
