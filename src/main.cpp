@@ -81,18 +81,6 @@ bool SlaveConf;
 
 uint8_t WiFiStatus;
 
-TaskHandle_t Taskhandle_1;
-TaskHandle_t TaskHandle_2;
-TaskHandle_t TaskHandle_3;
-TaskHandle_t TaskHandle_4;
-TaskHandle_t TaskHandle_5;
-TaskHandle_t TaskHandle_6;
-TaskHandle_t TaskHandle_7;
-TaskHandle_t TaskHandle_8;
-TaskHandle_t TaskHandle_9;
-TaskHandle_t TaskHandle_10;
-TaskHandle_t TaskHandle_11;
-
 lv_obj_t * tabview;
 lv_obj_t * tab1;
 lv_obj_t * tab2;
@@ -146,6 +134,8 @@ lv_obj_t * ConfFunctLabel;
 
 lv_obj_t * TempLabel;
 lv_obj_t * HumLabel;
+
+TaskHandle_t NTPHandle;
 
 static lv_disp_draw_buf_t disp_buf;
 static lv_color_t buf_1[MY_DISP_HOR_RES * 10];
@@ -291,7 +281,7 @@ static void event_handler_btn(lv_event_t * e){
     else if(code == LV_EVENT_CLICKED && obj == SaveBtn){
       MsgBox = lv_msgbox_create(NULL, NULL, "Settings Saved!", NULL, true);
       lv_obj_center(MsgBox);
-      xTaskCreate(SaveSettings, "Save Settings", 2000, NULL, 2, &TaskHandle_7);
+      xTaskCreate(SaveSettings, "Save Settings", 1500, NULL, 2, NULL);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBtn){
       lv_textarea_set_placeholder_text(WiFiSSID, ssid);
@@ -313,12 +303,12 @@ static void event_handler_btn(lv_event_t * e){
     else if(code == LV_EVENT_CLICKED && obj == SlaveSetBtn){
       MsgBox = lv_msgbox_create(NULL, NULL, "Loading!", NULL, false);
       lv_obj_center(MsgBox);
-      xTaskCreate(UpdateSlct, "Update Slave Select", 2500, NULL, 5, &TaskHandle_3);
+      xTaskCreate(UpdateSlct, "Update Slave Select", 1000, NULL, 5, NULL);
     }
     else if(code == LV_EVENT_CLICKED && obj == SlaveScanBtn){
       MsgBox = lv_msgbox_create(NULL, NULL, "Scanning!", NULL, false);
       lv_obj_center(MsgBox);
-      xTaskCreate(PairSlave, "Pair New Slave", 2500, NULL, 5, &TaskHandle_10);
+      xTaskCreate(PairSlave, "Pair New Slave", 800, NULL, 5, NULL);
     }
     else if(code == LV_EVENT_CLICKED && obj == SlaveSetBkBtn){
       lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
@@ -387,13 +377,13 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == FunctSetBtn){
-      xTaskCreate(UpdateFunct, "Update Function Select", 2000, NULL, 5, &TaskHandle_11);
+      xTaskCreate(UpdateFunct, "Update Function Select", 800, NULL, 5, NULL);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiCnctBtn){
       strcpy(ssid, lv_textarea_get_text(WiFiSSID));
       strcpy(password, lv_textarea_get_text(WiFiPass));
       WiFiStatus = 0;
-      xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, &TaskHandle_2);
+      xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, NULL);
       
       while(WiFiStatus == 0){
         vTaskDelay(50);
@@ -419,25 +409,25 @@ static void event_handler_sw(lv_event_t * e){
       if(obj == WiFisw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
         lv_obj_clear_state(NTPsw, LV_STATE_DISABLED);
         lv_obj_clear_state(WiFiSetBtn, LV_STATE_DISABLED);
-        xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, &TaskHandle_2);
+        xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, NULL);
         WiFiState = true;
       }
       else if(obj == WiFisw){
         lv_obj_clear_state(NTPsw, LV_STATE_CHECKED);
         lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
         lv_obj_add_state(WiFiSetBtn, LV_STATE_DISABLED);
-        xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, &TaskHandle_6);
+        xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, NULL);
         WiFiState = false;
         if(NTPState == true){
-          vTaskDelete(TaskHandle_4);
+          vTaskDelete(&NTPHandle);
           NTPState = false;
         }
       }
       else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
-        xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 2, &TaskHandle_4);      
+        xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 2, &NTPHandle);      
       }
       else if (obj == NTPsw){
-        vTaskDelete(TaskHandle_4);
+        vTaskDelete(NTPHandle);
         NTPState = false;
       }
     }
@@ -471,7 +461,7 @@ static void event_cb_mbox(lv_event_t * e)
       Param.RegAdd = RegAdd;
       Param.RegNo = RegNo;
       Param.ResVar = senddata+0;
-      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+      xTaskCreate(ModbusWorker, "Modbus Worker", 800, &Param, 4, NULL);
       vTaskDelay(10);
       EEPROM.put(82, CurSlaves);
       EEPROM.commit();
@@ -735,7 +725,7 @@ void setup() {
 
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
-    xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, &TaskHandle_2);
+    xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, NULL);
   }
   else if(WiFiState == false){
     lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
@@ -743,17 +733,17 @@ void setup() {
   }
   if(NTPState == true){
     lv_obj_add_state(NTPsw, LV_STATE_CHECKED);
-    xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 2, &TaskHandle_4);
+    xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 2, &NTPHandle);
   }
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 5, &TaskHandle_5);
-  xTaskCreate(MainWork, "Main Worker", 2000, NULL, 4, &TaskHandle_9);
+  xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 5, NULL);
+  xTaskCreate(MainWork, "Main Worker", 2000, NULL, 4, NULL);
 }
 
 void initWiFi(void * parameters2) {
   if (WiFi.status() == WL_CONNECTED){
-    xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, &TaskHandle_6);
+    xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, NULL);
   }
   while (WiFi.status() == WL_CONNECTED){
     vTaskDelay(100);
@@ -864,7 +854,7 @@ void UpdateSlct(void * parameters3) {
           Param.RegAdd = RegAdd;
           Param.RegNo = RegNo;
           Param.ResVar = scandata1;
-          xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+          xTaskCreate(ModbusWorker, "Modbus Worker", 800, &Param, 4, NULL);
           Slavescan = 0;
         }
       }
@@ -888,7 +878,7 @@ void UpdateSlct(void * parameters3) {
           Param.RegAdd = RegAdd;
           Param.RegNo = RegNo;
           Param.ResVar = scandata1;
-          xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+          xTaskCreate(ModbusWorker, "Modbus Worker", 800, &Param, 4, NULL);
           Slavescan = 0;
         }
       }
@@ -963,13 +953,13 @@ void PairSlave(void * Parameters10){
       Param.RegAdd = RegAdd;
       Param.RegNo = RegNo;
       Param.ResVar = scandata;
-      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+      xTaskCreate(ModbusWorker, "Modbus Worker", 800, &Param, 4, NULL);
       vTaskDelay(10);
       scanwait = millis() + scandelay;
       count++;
     }
     if (scandata[0] == 1){
-      xTaskCreate(ConfigureSlave, "Configure Slave", 2000, NULL, 4, &Taskhandle_1);
+      xTaskCreate(ConfigureSlave, "Configure Slave", 2000, NULL, 4, NULL);
       SlaveConf = 0;
     }
     if (count == 11){
@@ -996,7 +986,7 @@ void MainWork(void * Parameters9){
       Param.RegAdd = RegAdd;
       Param.RegNo = RegNo;
       Param.ResVar = resdata;
-      xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
+      xTaskCreate(ModbusWorker, "Modbus Worker", 800, &Param, 4, NULL);
       vTaskDelay(10);
       reswait = millis() + resdelay;
     }
