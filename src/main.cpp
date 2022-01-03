@@ -383,7 +383,7 @@ static void event_handler_btn(lv_event_t * e){
       strcpy(ssid, lv_textarea_get_text(WiFiSSID));
       strcpy(password, lv_textarea_get_text(WiFiPass));
       WiFiStatus = 0;
-      xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, NULL);
+      xTaskCreate(initWiFi, "Initialize WiFi", 1400, NULL, 4, NULL);
       
       while(WiFiStatus == 0){
         vTaskDelay(50);
@@ -409,22 +409,22 @@ static void event_handler_sw(lv_event_t * e){
       if(obj == WiFisw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
         lv_obj_clear_state(NTPsw, LV_STATE_DISABLED);
         lv_obj_clear_state(WiFiSetBtn, LV_STATE_DISABLED);
-        xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, NULL);
+        xTaskCreate(initWiFi, "Initialize WiFi", 1400, NULL, 4, NULL);
         WiFiState = true;
       }
       else if(obj == WiFisw){
         lv_obj_clear_state(NTPsw, LV_STATE_CHECKED);
         lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
         lv_obj_add_state(WiFiSetBtn, LV_STATE_DISABLED);
-        xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, NULL);
+        xTaskCreate(disWiFi, "Disable WiFi", 1200, NULL, 4, NULL);
         WiFiState = false;
         if(NTPState == true){
-          vTaskDelete(&NTPHandle);
+          vTaskDelete(NTPHandle);
           NTPState = false;
         }
       }
       else if(obj == NTPsw && lv_obj_has_state(obj, LV_STATE_CHECKED)) {
-        xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 2, &NTPHandle);      
+        xTaskCreate(CheckRTC, "Check RTC", 1200, NULL, 2, &NTPHandle);      
       }
       else if (obj == NTPsw){
         vTaskDelete(NTPHandle);
@@ -725,7 +725,7 @@ void setup() {
 
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
-    xTaskCreate(initWiFi, "Initialize WiFi", 2000, NULL, 4, NULL);
+    xTaskCreate(initWiFi, "Initialize WiFi", 2200, NULL, 4, NULL);
   }
   else if(WiFiState == false){
     lv_obj_add_state(NTPsw, LV_STATE_DISABLED);
@@ -733,17 +733,17 @@ void setup() {
   }
   if(NTPState == true){
     lv_obj_add_state(NTPsw, LV_STATE_CHECKED);
-    xTaskCreate(CheckRTC, "Check RTC", 2000, NULL, 2, &NTPHandle);
+    xTaskCreate(CheckRTC, "Check RTC", 1200, NULL, 2, &NTPHandle);
   }
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  xTaskCreate(TFTUpdate, "TFT Update", 2500, NULL, 5, NULL);
-  xTaskCreate(MainWork, "Main Worker", 2000, NULL, 4, NULL);
+  xTaskCreate(TFTUpdate, "TFT Update", 2700, NULL, 5, NULL);
+  xTaskCreate(MainWork, "Main Worker", 800, NULL, 4, NULL);
 }
 
 void initWiFi(void * parameters2) {
   if (WiFi.status() == WL_CONNECTED){
-    xTaskCreate(disWiFi, "Disable WiFi", 2000, NULL, 4, NULL);
+    xTaskCreate(disWiFi, "Disable WiFi", 1200, NULL, 4, NULL);
   }
   while (WiFi.status() == WL_CONNECTED){
     vTaskDelay(100);
