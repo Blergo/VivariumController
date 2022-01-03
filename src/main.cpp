@@ -467,7 +467,7 @@ static void event_cb_mbox(lv_event_t * e)
       Param.ResVar = senddata+0;
       xTaskCreate(ModbusWorker, "Modbus Worker", 2000, &Param, 4, &TaskHandle_8);
       vTaskDelay(10);
-      EEPROM.put(91, CurSlaves);
+      EEPROM.put(82, CurSlaves);
       EEPROM.commit();
       slavestr = String("ID: " + String(CurSlaves) + " - " + decodeAbility(String(scandata[1])));
       lv_dropdown_add_option(SlaveSelect, slavestr.c_str(), LV_DROPDOWN_POS_LAST);
@@ -492,16 +492,16 @@ void setup() {
 
   EEPROM.begin(95);
   EEPROM.get(0, xCalM);
-  EEPROM.get(6, yCalM);
-  EEPROM.get(11, xCalC);
-  EEPROM.get(18, yCalC);
-  EEPROM.get(24, WiFiState);
-  EEPROM.get(25, NTPState);
-  EEPROM.get(26, ssid);
-  EEPROM.get(58, password);
-  //EEPROM.put(91, 1);
+  EEPROM.get(4, yCalM);
+  EEPROM.get(8, xCalC);
+  EEPROM.get(12, yCalC);
+  EEPROM.get(16, WiFiState);
+  EEPROM.get(17, NTPState);
+  EEPROM.get(18, ssid);
+  EEPROM.get(50, password);
+  //EEPROM.put(82, 1);
   //EEPROM.commit();
-  EEPROM.get(91, CurSlaves);
+  EEPROM.get(82, CurSlaves);
 
   lv_init();
   lv_disp_draw_buf_init(&disp_buf, buf_1, NULL, MY_DISP_HOR_RES*10);
@@ -889,13 +889,13 @@ void UpdateSlct(void * parameters3) {
 
 void SaveSettings(void * parameters7) {
   EEPROM.put(0, xCalM);
-  EEPROM.put(6, yCalM);
-  EEPROM.put(11, xCalC);
-  EEPROM.put(18, yCalC);
-  EEPROM.put(24, WiFiState);
-  EEPROM.put(25, NTPState);
-  EEPROM.put(26, ssid);
-  EEPROM.put(58, password);
+  EEPROM.put(4, yCalM);
+  EEPROM.put(8, xCalC);
+  EEPROM.put(12, yCalC);
+  EEPROM.put(16, WiFiState);
+  EEPROM.put(17, NTPState);
+  EEPROM.put(18, ssid);
+  EEPROM.put(50, password);
   EEPROM.commit();
   Serial.println("Settings Saved");
   vTaskDelete(NULL);
