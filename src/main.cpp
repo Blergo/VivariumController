@@ -294,6 +294,8 @@ static void event_handler_btn(lv_event_t * e){
       xTaskCreate(SaveSettings, "Save Settings", 2000, NULL, 2, &TaskHandle_7);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBtn){
+      lv_textarea_set_placeholder_text(WiFiSSID, ssid);
+      lv_textarea_set_placeholder_text(WiFiPass, password);
       lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
@@ -730,9 +732,6 @@ void setup() {
       Serial.flush();
       while (1) delay(10);
   }
-
-  lv_textarea_set_placeholder_text(WiFiSSID, ssid);
-  lv_textarea_set_placeholder_text(WiFiPass, password);
 
   if(WiFiState == true){
     lv_obj_add_state(WiFisw, LV_STATE_CHECKED);
