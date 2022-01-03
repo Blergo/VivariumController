@@ -137,6 +137,11 @@ lv_obj_t * WiFilabel;
 
 lv_obj_t * FunctSetBkBtn;
 lv_obj_t * FunctSetBkLabel;
+lv_obj_t * FunctionSelect;
+lv_obj_t * NewFunctBtn;
+lv_obj_t * NewFunctLabel;
+lv_obj_t * ConfFunctBtn;
+lv_obj_t * ConfFunctLabel;
 
 lv_obj_t * TempLabel;
 lv_obj_t * HumLabel;
@@ -354,6 +359,9 @@ static void event_handler_btn(lv_event_t * e){
     }
     else if(code == LV_EVENT_CLICKED && obj == FunctSetBkBtn){
       lv_obj_add_flag(FunctSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(FunctionSelect, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(NewFunctBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(ConfFunctBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
@@ -376,6 +384,9 @@ static void event_handler_btn(lv_event_t * e){
     }
     else if(code == LV_EVENT_CLICKED && obj == FunctSetBtn){
       lv_obj_clear_flag(FunctSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(FunctionSelect, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(NewFunctBtn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(ConfFunctBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(FunctSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
@@ -607,6 +618,31 @@ void setup() {
   FunctSetBkLabel = lv_label_create(FunctSetBkBtn);
   lv_label_set_text(FunctSetBkLabel, "Back");
   lv_obj_center(FunctSetBkLabel);
+
+  FunctionSelect = lv_dropdown_create(tab2);
+  lv_obj_set_width(FunctionSelect, MY_DISP_HOR_RES-50); 
+  lv_obj_align(FunctionSelect, LV_ALIGN_TOP_LEFT, 10, 10);
+  lv_obj_add_event_cb(FunctionSelect, NULL, LV_EVENT_ALL, NULL);
+  lv_obj_add_flag(FunctionSelect, LV_OBJ_FLAG_HIDDEN);
+
+  NewFunctBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(NewFunctBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align(NewFunctBtn, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
+  
+  lv_obj_add_flag(NewFunctBtn, LV_OBJ_FLAG_HIDDEN);
+
+  NewFunctLabel = lv_label_create(NewFunctBtn);
+  lv_label_set_text(NewFunctLabel, "New");
+  lv_obj_center(NewFunctLabel);
+
+  ConfFunctBtn = lv_btn_create(tab2);
+  lv_obj_add_event_cb(ConfFunctBtn, event_handler_btn, LV_EVENT_ALL, NULL);
+  lv_obj_align(ConfFunctBtn, LV_ALIGN_BOTTOM_MID, 0, -10);
+  lv_obj_add_flag(ConfFunctBtn, LV_OBJ_FLAG_HIDDEN);
+
+  ConfFunctLabel = lv_label_create(ConfFunctBtn);
+  lv_label_set_text(ConfFunctLabel, "Configure");
+  lv_obj_center(ConfFunctLabel);
 
   WiFiSSID = lv_textarea_create(tab2);
   lv_textarea_set_one_line(WiFiSSID, true);
