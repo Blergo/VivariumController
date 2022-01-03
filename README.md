@@ -3,15 +3,15 @@
 <h3>EEPROM</h3>
 EEPROM addresses are in use as follows.<br />
 <br />
-0 - 5, xCalM<br />
-6 - 10, yCalM<br />
-11 - 17, xCalC<br />
-18 - 23, yCalC<br />
-24, WiFiState<br />
-25, NTPState<br />
-26 - 57, ssid<br />
-58 - 90, password<br />
-91 - 92, Number of used Slave ID's<br />
+0 - 3, xCalM<br />
+4 - 7, yCalM<br />
+8 - 11, xCalC<br />
+12 - 15, yCalC<br />
+16, WiFiState<br />
+17, NTPState<br />
+18 - 49, ssid<br />
+50 - 81, password<br />
+82 - 83, Number of used Slave ID's<br />
 <br />
 <br />
 <h3>Modbus</h3>
