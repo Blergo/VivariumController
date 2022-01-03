@@ -91,6 +91,7 @@ TaskHandle_t TaskHandle_7;
 TaskHandle_t TaskHandle_8;
 TaskHandle_t TaskHandle_9;
 TaskHandle_t TaskHandle_10;
+TaskHandle_t TaskHandle_11;
 
 lv_obj_t * tabview;
 lv_obj_t * tab1;
@@ -166,6 +167,7 @@ void SaveSettings(void * parameters7);
 void ModbusWorker(void * parameters8);
 void MainWork(void * Parameters9);
 void PairSlave(void * Parameters10);
+void UpdateFunct(void * Parameters11);
 
 class ScreenPoint {
 
@@ -383,16 +385,7 @@ static void event_handler_btn(lv_event_t * e){
       lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
     }
     else if(code == LV_EVENT_CLICKED && obj == FunctSetBtn){
-      lv_obj_clear_flag(FunctSetBkBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(FunctionSelect, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(NewFunctBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(ConfFunctBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(FunctSetBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+      xTaskCreate(UpdateFunct, "Update Function Select", 2000, NULL, 5, &TaskHandle_11);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiCnctBtn){
       strcpy(ssid, lv_textarea_get_text(WiFiSSID));
@@ -628,7 +621,6 @@ void setup() {
   NewFunctBtn = lv_btn_create(tab2);
   lv_obj_add_event_cb(NewFunctBtn, event_handler_btn, LV_EVENT_ALL, NULL);
   lv_obj_align(NewFunctBtn, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
-  
   lv_obj_add_flag(NewFunctBtn, LV_OBJ_FLAG_HIDDEN);
 
   NewFunctLabel = lv_label_create(NewFunctBtn);
@@ -923,6 +915,23 @@ void UpdateSlct(void * parameters3) {
   vTaskDelete(NULL);
 }
 
+void UpdateFunct(void * Parameters11) {
+  String FunctString;
+  lv_dropdown_set_options(FunctionSelect, FunctString.c_str());
+  lv_obj_clear_flag(FunctSetBkBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(FunctionSelect, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(NewFunctBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_clear_flag(ConfFunctBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(FunctSetBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(SysSetBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(CalBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(SaveBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(WiFiSetBtn, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(SlaveSetBtn, LV_OBJ_FLAG_HIDDEN);
+  vTaskDelay(10);
+  vTaskDelete(NULL);
+}
+
 void SaveSettings(void * parameters7) {
   EEPROM.put(0, xCalM);
   EEPROM.put(4, yCalM);
@@ -961,7 +970,7 @@ void PairSlave(void * Parameters10){
       count++;
     }
     if (scandata[0] == 1){
-      xTaskCreate(ConfigureSlave, "Configure Slave", 1500, NULL, 2, &Taskhandle_1);
+      xTaskCreate(ConfigureSlave, "Configure Slave", 2000, NULL, 4, &Taskhandle_1);
       SlaveConf = 0;
     }
     if (count == 11){
@@ -1001,8 +1010,8 @@ void ModbusWorker(void * parameters8){
   master.start();
   master.setTimeOut(1000);
   uint8_t u8state = 0;
-
   while(modbusrun == 1){
+    vTaskDelay(50);
     switch(u8state) {
       case 0: 
         telegram.u8id = modbus_config.SlaveID;
