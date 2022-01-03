@@ -284,6 +284,8 @@ static void event_handler_btn(lv_event_t * e){
       calibrateTouchScreen();
     }
     else if(code == LV_EVENT_CLICKED && obj == SaveBtn){
+      MsgBox = lv_msgbox_create(NULL, NULL, "Settings Saved!", NULL, true);
+      lv_obj_center(MsgBox);
       xTaskCreate(SaveSettings, "Save Settings", 2000, NULL, 2, &TaskHandle_7);
     }
     else if(code == LV_EVENT_CLICKED && obj == WiFiSetBtn){
