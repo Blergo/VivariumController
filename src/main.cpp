@@ -25,10 +25,8 @@ uint16_t scandata[2];
 uint16_t senddata[1];
 uint16_t scandata1[2];
 uint16_t resdata[8];
-uint8_t u8state;
 Modbus master(0,Serial1,0);
 modbus_t telegram;
-unsigned long u32wait;
 unsigned long scanwait;
 unsigned long scandelay = 1000;
 unsigned long reswait;
@@ -965,26 +963,22 @@ void ModbusWorker(void * parameters8){
   modbusrun = 1;
   ModbusParam modbus_config = *(ModbusParam *) parameters8;
   master.start();
-  master.setTimeOut( 2000 );
-  u32wait = millis() + 500;
-  u8state = 0;
+  master.setTimeOut(1000);
+  uint8_t u8state = 0;
 
   while(modbusrun == 1){
-    switch( u8state ) {
+    switch(u8state) {
       case 0: 
-        if (millis() > u32wait) u8state++;
-      break;
-      case 1: 
         telegram.u8id = modbus_config.SlaveID;
         telegram.u8fct = modbus_config.Function;
         telegram.u16RegAdd = modbus_config.RegAdd;
         telegram.u16CoilsNo = modbus_config.RegNo;
         telegram.au16reg = modbus_config.ResVar;
 
-        master.query( telegram );
+        master.query(telegram);
         u8state++;
       break;
-      case 2:
+      case 1:
         master.poll();
         if (master.getState() == COM_IDLE) {
           u8state = 0;
