@@ -5,8 +5,7 @@ https://github.com/Blergo/VivariumController---DHT22-Slave <br />
 https://github.com/Blergo/VivariumController---3PortHub <br />
 <br />
 <br />
-<h2>Current Implementation</h2>
-<h3>EEPROM</h3>
+<h2>EEPROM</h2>
 EEPROM addresses are in use as follows.<br />
 <br />
 0 - 3, xCalM<br />
@@ -20,17 +19,17 @@ EEPROM addresses are in use as follows.<br />
 82 - 83, Number of used Slave ID's<br />
 <br />
 <br />
-<h3>Modbus</h3>
+<h2>Modbus</h2>
 Register 1 = Slave ID<br />
 Register 2 = Slave Capeability<br />
 Register 3 = Sensor Error Codes (Slave Dependant)<br />
 Register 4 = Total Modbus Errors<br />
 Register 5+ = Data (Slave Dependant)<br />
 <br />
-<h4>Slave ID</h4>
-The slaves all start off with this register set to 1 and an ID of 1. When the controller discovers a new slave with ID 1 it has the ability to create a message box saying a new slave has been detected.  This is currently disabled as the master is not yet setup to change the slave ID so i am using Slave ID1 (default) for testing untill i implement this code.<br />
+<h3>Slave ID</h3>
+The slaves all start off with this register set to 1 and an ID of 1. There is a Pair Slave button in the slave settings manu item that scans for slaves with ID1 and when one is found the slave ID is set to the next available ID (Current Slaves +1) by updating the slaves ID Register and the Current slaves Value is updated. The slave will detect the change in the slave ID register and save this value to EEPROM before triggering a reboot to apply the new Slave ID. <br />
 <br />
-<h4>Slave Capeabilities</h4>
+<h3>Slave Capeabilities</h3>
 Implemented on slaves as below and read by master when a new slave is detected (currently disabled, see above) Master does not do anything with this currently.<br />
 <br />
 00 = Not Detected<br />
@@ -39,41 +38,3 @@ Implemented on slaves as below and read by master when a new slave is detected (
 07 - 81 =  Unassigned<br />
 82 =  2 Qty 10A 250VAC relays<br />
 83 - FF =  Unassigned<br />
-<br />
-<br />
-<br />
-<h2>Intended Opperation (WIP - The current code is not currently implemented as below)</h2>
-<h3>EEPROM</h3>
-EEPROM addresses are in use as follows.<br />
-<br />
-0 - 3, xCalM<br />
-4 - 7, yCalM<br />
-8 - 11, xCalC<br />
-12 - 15, yCalC<br />
-16, WiFiState<br />
-17, NTPState<br />
-18 - 49, ssid<br />
-50 - 81, password<br />
-82 - 83, Number of used Slave ID's<br />
-<br />
-<br />
-<h3>Modbus</h3>
-Register 1 = Slave ID<br />
-Register 2 = Slave Capeability<br />
-Register 3 = Sensor Error Codes (Slave Dependant)<br />
-Register 4 = Total Modbus Errors<br />
-Register 5+ = Data (Slave Dependant)<br />
-<br />
-<h4>Slave ID</h4>
-Slaves have to be added one at a time and the controller periodically polls Slave ID 1 to see if a new slave has been connected. The slaves all start off with this register set to 1 and an ID of 1. When the controller discovers a new slave it checks to see what the next free slave ID is and sets this new slave ID in this register. The slave then stores the new Slave ID in EEPROM and will use this the next time it is power cycled.  Slaves will have a reset button to enable this and any other stored settings to be erased ready for pairing to a new controller.<br />
-<br />
-<h4>Slave Capeabilities</h4>
-The slave capeabilities are assigned to this register as follows. <br />
-<br />
-00 = Not Detected<br />
-01 - 05 =  1 to 5 Qty DS18B20 Temperature sensors<br />
-06 - 0A =  1 to 5 Qty DHT22 Temperatre & Hummidity sensors<br />
-0B - 80 =  Unassigned<br />
-81 - 85 =  1 to 5 Qty 10A 250VAC relays<br />
-86 - 90 =  1 to 5 Qty 10A 250VAC relays with current reading<br />
-91 - FF =  Unassigned<br />
