@@ -1,4 +1,10 @@
 <h1>Vivarium Controller</h1>
+<h2>Modules</h2>
+https://github.com/Blergo/Vivariumcontroller---2Relay <br />
+https://github.com/Blergo/VivariumController---DHT22-Slave <br />
+https://github.com/Blergo/VivariumController---3PortHub <br />
+<br />
+<br />
 <h2>Current Implementation</h2>
 <h3>EEPROM</h3>
 EEPROM addresses are in use as follows.<br />
